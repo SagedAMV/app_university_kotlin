@@ -27,7 +27,7 @@ fun BentoGrid(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 row.items.forEach { item ->
-                    Box(modifier = item.modifier) {
+                    Box(modifier = Modifier.weight(item.weight)) {
                         item.content()
                     }
                 }
@@ -37,7 +37,7 @@ fun BentoGrid(
 }
 
 interface BentoGridScope {
-    fun row(content: @Composable BentoRowScope.() -> Unit)
+    fun row(content: BentoRowScope.() -> Unit)
 }
 
 interface BentoRowScope {
@@ -50,7 +50,7 @@ interface BentoRowScope {
 private class BentoGridScopeImpl : BentoGridScope {
     val rows = mutableListOf<BentoRowData>()
 
-    override fun row(content: @Composable BentoRowScope.() -> Unit) {
+    override fun row(content: BentoRowScope.() -> Unit) {
         val rowScope = BentoRowScopeImpl()
         rowScope.content()
         rows.add(BentoRowData(rowScope.items))
@@ -61,12 +61,12 @@ private class BentoRowScopeImpl : BentoRowScope {
     val items = mutableListOf<BentoItemData>()
 
     override fun item(weight: Float, content: @Composable () -> Unit) {
-        items.add(BentoItemData(Modifier.weight(weight), content))
+        items.add(BentoItemData(weight, content))
     }
 }
 
 private data class BentoRowData(val items: List<BentoItemData>)
-private data class BentoItemData(val modifier: Modifier, val content: @Composable () -> Unit)
+private data class BentoItemData(val weight: Float, val content: @Composable () -> Unit)
 
 /**
  * Simple 2-column bento grid for mobile
@@ -87,7 +87,7 @@ fun SimpleBentoGrid(
 @Composable
 fun BentoRow(
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable RowScope.() -> Unit
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),

@@ -130,13 +130,7 @@ fun TaskItem(task: TaskEntity, onToggleDone: () -> Unit, onDelete: () -> Unit) {
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .animateItemPlacement(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            ),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (task.isDone) {

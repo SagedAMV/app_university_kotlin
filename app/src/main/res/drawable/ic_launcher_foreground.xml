@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- قبعة التخرج (قبعة) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,32 L78,43 L54,54 L30,43 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M78,43 L78,56 L75.5,56 L75.5,44.2 Z" />
+    <!-- قاعدة القبعة (الجزء الأسفل) -->
+    <path
+        android:fillColor="#E0E7FF"
+        android:pathData="M41,50.5 L41,60 C41,64 46.8,67.5 54,67.5 C61.2,67.5 67,64 67,60 L67,50.5 L54,56.4 Z" />
+    <!-- كتاب مفتوح -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,71 C49,68.4 43.2,67.6 37,68.3 L37,78.6 C43.2,77.9 49,78.7 54,81.3 C59,78.7 64.8,77.9 71,78.6 L71,68.3 C64.8,67.6 59,68.4 54,71 Z" />
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M53.4,71.4 L54.6,71.4 L54.6,81 L53.4,81 Z" />
+</vector>

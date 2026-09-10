@@ -109,10 +109,7 @@ fun ExamItem(exam: ExamEntity, onDelete: () -> Unit) {
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .animateItemPlacement(
-                animationSpec = spring(stiffness = Spring.StiffnessMedium)
-            ),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
