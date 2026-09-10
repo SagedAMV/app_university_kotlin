@@ -10,16 +10,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.unimanager.app.ui.components.AnimatedBottomNavBar
 import com.unimanager.app.ui.dashboard.DashboardScreen
-import com.unimanager.app.ui.exams.ExamsScreen
 import com.unimanager.app.ui.files.FilesScreen
 import com.unimanager.app.ui.galaxy.GalaxyScreen
-import com.unimanager.app.ui.notes.NotesScreen
-import com.unimanager.app.ui.schedule.ScheduleScreen
-import com.unimanager.app.ui.tasks.TasksScreen
+import com.unimanager.app.ui.unified.UnifiedScreen
 import com.unimanager.app.viewmodel.AppViewModel
 
 data class NavItem(
@@ -31,10 +27,7 @@ data class NavItem(
 val navItems = listOf(
     NavItem("dashboard", "الرئيسية", Icons.Filled.Home),
     NavItem("files", "الملفات", Icons.Filled.Folder),
-    NavItem("tasks", "المهام", Icons.Filled.CheckCircle),
-    NavItem("notes", "ملاحظاتي", Icons.Filled.Note),
-    NavItem("exams", "الامتحانات", Icons.Filled.School),
-    NavItem("schedule", "الجدول", Icons.Filled.CalendarToday),
+    NavItem("unified", "الأقسام", Icons.Filled.Apps),
     NavItem("galaxy", "المجرة", Icons.Filled.Star)
 )
 
@@ -72,36 +65,12 @@ fun AppNavigation(viewModel: AppViewModel) {
             ) { FilesScreen(viewModel = viewModel, navController = navController) }
 
             composable(
-                "tasks",
+                "unified",
                 enterTransition = { fadeIn(tween(300)) + slideInVertically { it / 3 } },
                 exitTransition = { fadeOut(tween(200)) },
                 popEnterTransition = { fadeIn(tween(300)) },
                 popExitTransition = { fadeOut(tween(200)) }
-            ) { TasksScreen(viewModel = viewModel) }
-
-            composable(
-                "notes",
-                enterTransition = { fadeIn(tween(300)) + slideInVertically { it / 3 } },
-                exitTransition = { fadeOut(tween(200)) },
-                popEnterTransition = { fadeIn(tween(300)) },
-                popExitTransition = { fadeOut(tween(200)) }
-            ) { NotesScreen(viewModel = viewModel) }
-
-            composable(
-                "exams",
-                enterTransition = { fadeIn(tween(300)) + slideInVertically { it / 3 } },
-                exitTransition = { fadeOut(tween(200)) },
-                popEnterTransition = { fadeIn(tween(300)) },
-                popExitTransition = { fadeOut(tween(200)) }
-            ) { ExamsScreen(viewModel = viewModel) }
-
-            composable(
-                "schedule",
-                enterTransition = { fadeIn(tween(300)) + slideInVertically { it / 3 } },
-                exitTransition = { fadeOut(tween(200)) },
-                popEnterTransition = { fadeIn(tween(300)) },
-                popExitTransition = { fadeOut(tween(200)) }
-            ) { ScheduleScreen(viewModel = viewModel) }
+            ) { UnifiedScreen(viewModel = viewModel) }
 
             composable(
                 "galaxy",

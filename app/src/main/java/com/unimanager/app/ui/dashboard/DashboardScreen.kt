@@ -15,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -46,7 +45,16 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("🏠 الرئيسية", style = MaterialTheme.typography.headlineMedium) },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🏠", fontSize = 24.sp, modifier = Modifier.padding(end = 8.dp))
+                        Text(
+                            "الرئيسية",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
                 ),
@@ -72,68 +80,83 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                 }
             }
 
-            // Bento Grid - Stats
+            // Overview title
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 100) {
-                    Text(
-                        "نظرة عامة",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .height(24.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(Primary)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "نظرة عامة",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
+            // Stats - Row 1
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 150) {
                     BentoRow {
-                        GlassStatCard(
-                            icon = "📄",
+                        StatCard(
+                            icon = Icons.Filled.Description,
                             number = "$fileCount",
                             label = "ملف",
-                            accentColor = Primary,
+                            color = Primary,
                             modifier = Modifier.weight(1f)
                         )
-                        GlassStatCard(
-                            icon = "📁",
+                        StatCard(
+                            icon = Icons.Filled.Folder,
                             number = "${totalSize / (1024 * 1024)}MB",
                             label = "الحجم",
-                            accentColor = Secondary,
+                            color = Secondary,
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
             }
 
+            // Stats - Row 2
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 250) {
                     BentoRow {
-                        GlassStatCard(
-                            icon = "✅",
+                        StatCard(
+                            icon = Icons.Filled.CheckCircle,
                             number = "$pendingTasks",
                             label = "مهمةPending",
-                            accentColor = Warning,
+                            color = Warning,
                             modifier = Modifier.weight(1f)
                         )
-                        GlassStatCard(
-                            icon = "🎓",
+                        StatCard(
+                            icon = Icons.Filled.School,
                             number = "$upcomingExams",
                             label = "امتحان قادم",
-                            accentColor = Danger,
+                            color = Danger,
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
             }
 
-            // Hero Bento Card - Lectures
+            // Hero Card - Lectures
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 350) {
                     HeroBentoCard(
                         icon = "📅",
                         title = "محاضرات اليوم",
                         subtitle = "$lectureCount محاضرة مجدولة",
-                        accentColor = Primary,
-                        onClick = { navController.navigate("schedule") }
+                        color = Primary,
+                        onClick = { navController.navigate("unified") }
                     )
                 }
             }
@@ -141,30 +164,45 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
             // Quick Actions
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 450) {
-                    Text(
-                        "⚡ إجراءات سريعة",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .height(24.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(Warning)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "إجراءات سريعة",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Text("⚡", fontSize = 20.sp)
+                    }
                 }
             }
 
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 500) {
                     BentoRow {
-                        QuickActionButton(
+                        QuickAction(
                             icon = Icons.Filled.Folder,
                             label = "الملفات",
                             color = Primary,
                             modifier = Modifier.weight(1f)
                         ) { navController.navigate("files") }
 
-                        QuickActionButton(
+                        QuickAction(
                             icon = Icons.Filled.CheckCircle,
                             label = "المهام",
                             color = Secondary,
                             modifier = Modifier.weight(1f)
-                        ) { navController.navigate("tasks") }
+                        ) { navController.navigate("unified") }
                     }
                 }
             }
@@ -172,14 +210,14 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 600) {
                     BentoRow {
-                        QuickActionButton(
+                        QuickAction(
                             icon = Icons.Filled.Note,
                             label = "ملاحظاتي",
                             color = Info,
                             modifier = Modifier.weight(1f)
-                        ) { navController.navigate("notes") }
+                        ) { navController.navigate("unified") }
 
-                        QuickActionButton(
+                        QuickAction(
                             icon = Icons.Filled.Star,
                             label = "المجرة",
                             color = Warning,
@@ -192,11 +230,24 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
             // Recent Activity
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 700) {
-                    Text(
-                        "النشاط الأخير",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .height(24.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(Info)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "النشاط الأخير",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
@@ -206,7 +257,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                         icon = "📥",
                         title = "تم رفع ملف جديد",
                         time = "منذ 5 دقائق",
-                        accentColor = Primary
+                        color = Primary
                     )
                 }
             }
@@ -281,11 +332,57 @@ private fun WelcomeCard() {
 }
 
 @Composable
+private fun StatCard(
+    icon: ImageVector,
+    number: String,
+    label: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = color.copy(alpha = if (isDark) 0.15f else 0.1f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                icon,
+                contentDescription = label,
+                tint = color,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                number,
+                style = MaterialTheme.typography.headlineLarge,
+                color = color,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
 private fun HeroBentoCard(
     icon: String,
     title: String,
     subtitle: String,
-    accentColor: Color,
+    color: Color,
     onClick: () -> Unit
 ) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
@@ -309,11 +406,11 @@ private fun HeroBentoCard(
                     onClick()
                 }
             ),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = accentColor.copy(alpha = if (isDark) 0.15f else 0.1f)
+            containerColor = color.copy(alpha = if (isDark) 0.15f else 0.1f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(24.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
             modifier = Modifier
@@ -325,10 +422,10 @@ private fun HeroBentoCard(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(accentColor.copy(alpha = 0.2f)),
+                    .background(color.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(icon, style = MaterialTheme.typography.headlineMedium)
+                Text(icon, fontSize = 28.sp)
             }
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -338,7 +435,7 @@ private fun HeroBentoCard(
             Icon(
                 Icons.Filled.ArrowForward,
                 contentDescription = null,
-                tint = accentColor,
+                tint = color,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -346,7 +443,7 @@ private fun HeroBentoCard(
 }
 
 @Composable
-private fun QuickActionButton(
+private fun QuickAction(
     icon: ImageVector,
     label: String,
     color: Color,
@@ -354,34 +451,49 @@ private fun QuickActionButton(
     onClick: () -> Unit
 ) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isPressed = remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed.value) 0.95f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "pressScale"
+    )
 
     Card(
         modifier = modifier
-            .clickable(onClick = onClick)
+            .scale(scale)
+            .clickable(
+                onClick = {
+                    isPressed.value = true
+                    onClick()
+                }
+            )
             .aspectRatio(1f),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = color.copy(alpha = if (isDark) 0.12f else 0.08f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(20.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(52.dp)
                     .clip(CircleShape)
                     .background(color.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(22.dp))
+                Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(26.dp))
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium)
         }
     }
@@ -392,14 +504,17 @@ private fun ActivityCard(
     icon: String,
     title: String,
     time: String,
-    accentColor: Color
+    color: Color
 ) {
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ),
-        shape = RoundedCornerShape(16.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
@@ -409,12 +524,12 @@ private fun ActivityCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
-                    .background(accentColor.copy(alpha = 0.15f)),
+                    .background(color.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(icon, fontSize = 18.sp)
+                Text(icon, fontSize = 22.sp)
             }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {

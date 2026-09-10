@@ -17,10 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.unimanager.app.data.entity.NoteEntity
 import com.unimanager.app.ui.components.*
 import com.unimanager.app.ui.theme.*
@@ -37,7 +36,12 @@ fun NotesScreen(viewModel: AppViewModel) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("📝 ملاحظاتي", fontWeight = FontWeight.Bold) })
+            TopAppBar(title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("📝", fontSize = 24.sp, modifier = Modifier.padding(end = 8.dp))
+                    Text("ملاحظاتي", fontWeight = FontWeight.Bold)
+                }
+            })
         },
         floatingActionButton = {
             val fabScale by animateFloatAsState(
@@ -51,8 +55,7 @@ fun NotesScreen(viewModel: AppViewModel) {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
                 modifier = Modifier.scale(fabScale),
-                shape = RoundedCornerShape(16.dp),
-                containerColor = MaterialTheme.colorScheme.primary
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "إضافة ملاحظة")
             }
@@ -60,36 +63,24 @@ fun NotesScreen(viewModel: AppViewModel) {
     ) { padding ->
         if (notes.isEmpty()) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("📝", style = MaterialTheme.typography.displayLarge)
+                    Text("📝", fontSize = 64.sp)
                     Spacer(Modifier.height(16.dp))
-                    Text("لا توجد ملاحظات بعد", style = MaterialTheme.typography.titleLarge)
-                    Text("اضغط + لإضافة ملاحظة جديدة")
+                    Text("لا توجد ملاحظات بعد", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 }
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(
-                    items = notes,
-                    key = { it.id }
-                ) { note ->
+                items(notes, key = { it.id }) { note ->
                     SlideUpEntrance(visible = screenVisible) {
-                        NoteItem(
-                            note = note,
-                            onClick = { /* TODO: Edit */ },
-                            onDelete = { viewModel.deleteNote(note) }
-                        )
+                        NoteItem(note = note, onDelete = { viewModel.deleteNote(note) })
                     }
                 }
             }
@@ -108,42 +99,20 @@ fun NotesScreen(viewModel: AppViewModel) {
 }
 
 @Composable
-fun NoteItem(note: NoteEntity, onClick: () -> Unit, onDelete: () -> Unit) {
-    val isPressed = remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed.value) 0.97f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "pressScale"
-    )
-
+fun NoteItem(note: NoteEntity, onDelete: () -> Unit) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val colors = listOf(Info, Secondary, Warning, Primary)
     val noteColor = colors[note.title.hashCode().mod(colors.size)]
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale)
-            .clickable(
-                onClick = {
-                    isPressed.value = true
-                    onClick()
-                }
-            ),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = noteColor.copy(alpha = if (isDark) 0.12f else 0.08f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
@@ -201,9 +170,7 @@ fun AddNoteDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
                     value = content,
                     onValueChange = { content = it },
                     label = { Text("المحتوى") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp),
+                    modifier = Modifier.fillMaxWidth().height(120.dp),
                     shape = RoundedCornerShape(12.dp)
                 )
             }

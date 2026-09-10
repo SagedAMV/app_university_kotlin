@@ -37,7 +37,12 @@ fun TasksScreen(viewModel: AppViewModel) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("✅ مهامي", fontWeight = FontWeight.Bold) })
+            TopAppBar(title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("✅", fontSize = 24.sp, modifier = Modifier.padding(end = 8.dp))
+                    Text("مهامي", fontWeight = FontWeight.Bold)
+                }
+            })
         },
         floatingActionButton = {
             val fabScale by animateFloatAsState(
@@ -51,27 +56,30 @@ fun TasksScreen(viewModel: AppViewModel) {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
                 modifier = Modifier.scale(fabScale),
-                shape = RoundedCornerShape(16.dp),
-                containerColor = MaterialTheme.colorScheme.primary
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "إضافة مهمة")
             }
         }
     ) { padding ->
         if (tasks.isEmpty()) {
-            EmptyTasksScreen(modifier = Modifier.padding(padding))
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("", fontSize = 64.sp)
+                    Spacer(Modifier.height(16.dp))
+                    Text("لا توجد مهام بعد", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                }
+            }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(
-                    items = tasks,
-                    key = { it.id }
-                ) { task ->
+                items(tasks, key = { it.id }) { task ->
                     SlideUpEntrance(visible = screenVisible) {
                         TaskItem(
                             task = task,
@@ -96,32 +104,8 @@ fun TasksScreen(viewModel: AppViewModel) {
 }
 
 @Composable
-private fun EmptyTasksScreen(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("✅", style = MaterialTheme.typography.displayLarge)
-            Spacer(Modifier.height(16.dp))
-            Text("لا توجد مهام بعد", style = MaterialTheme.typography.titleLarge)
-            Text("اضغط + لإضافة مهمة جديدة")
-        }
-    }
-}
-
-@Composable
 fun TaskItem(task: TaskEntity, onToggleDone: () -> Unit, onDelete: () -> Unit) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val isCheckedAnim by animateFloatAsState(
-        targetValue = if (task.isDone) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "checkAnim"
-    )
-
     val priorityColor = when (task.priority) {
         "high" -> Danger
         "medium" -> Warning
@@ -129,19 +113,13 @@ fun TaskItem(task: TaskEntity, onToggleDone: () -> Unit, onDelete: () -> Unit) {
     }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (task.isDone) {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
+            containerColor = if (task.isDone) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            else MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (task.isDone) 0.dp else 2.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = if (task.isDone) 0.dp else 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -149,15 +127,12 @@ fun TaskItem(task: TaskEntity, onToggleDone: () -> Unit, onDelete: () -> Unit) {
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Animated checkbox
             IconButton(onClick = onToggleDone, modifier = Modifier.size(40.dp)) {
                 Box(
                     modifier = Modifier
                         .size(28.dp)
                         .clip(CircleShape)
-                        .background(
-                            if (task.isDone) Success else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                        ),
+                        .background(if (task.isDone) Success else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
                     contentAlignment = Alignment.Center
                 ) {
                     androidx.compose.animation.AnimatedVisibility(
@@ -180,27 +155,22 @@ fun TaskItem(task: TaskEntity, onToggleDone: () -> Unit, onDelete: () -> Unit) {
                     task.title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
-                    textDecoration = if (task.isDone) TextDecoration.LineThrough else TextDecoration.None,
-                    color = if (task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    else MaterialTheme.colorScheme.onSurface
+                    textDecoration = if (task.isDone) TextDecoration.LineThrough else TextDecoration.None
                 )
                 if (task.description.isNotBlank()) {
                     Text(
                         task.description,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        maxLines = 1
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            // Priority indicator
             Box(
                 modifier = Modifier
                     .size(8.dp)
                     .clip(CircleShape)
                     .background(priorityColor)
-                    .pulseEffect(active = task.priority == "high" && !task.isDone)
             )
 
             Spacer(Modifier.width(4.dp))

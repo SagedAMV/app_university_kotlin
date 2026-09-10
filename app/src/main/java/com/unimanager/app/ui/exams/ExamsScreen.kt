@@ -16,9 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.unimanager.app.data.entity.ExamEntity
 import com.unimanager.app.ui.components.*
 import com.unimanager.app.ui.theme.*
@@ -35,7 +35,14 @@ fun ExamsScreen(viewModel: AppViewModel) {
     LaunchedEffect(Unit) { screenVisible = true }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("🎓 الامتحانات", fontWeight = FontWeight.Bold) }) },
+        topBar = {
+            TopAppBar(title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🎓", fontSize = 24.sp, modifier = Modifier.padding(end = 8.dp))
+                    Text("الامتحانات", fontWeight = FontWeight.Bold)
+                }
+            })
+        },
         floatingActionButton = {
             val fabScale by animateFloatAsState(
                 targetValue = if (screenVisible) 1f else 0f,
@@ -60,10 +67,9 @@ fun ExamsScreen(viewModel: AppViewModel) {
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("🎓", style = MaterialTheme.typography.displayLarge)
+                    Text("🎓", fontSize = 64.sp)
                     Spacer(Modifier.height(16.dp))
-                    Text("لا توجد امتحانات بعد", style = MaterialTheme.typography.titleLarge)
-                    Text("اضغط + لإضافة امتحان")
+                    Text("لا توجد امتحانات بعد", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 }
             }
         } else {
@@ -94,7 +100,11 @@ fun ExamsScreen(viewModel: AppViewModel) {
 
 @Composable
 fun ExamItem(exam: ExamEntity, onDelete: () -> Unit) {
-    val daysUntil = daysUntilExam(exam.examDate)
+    val daysUntil = try {
+        val date = LocalDate.parse(exam.examDate)
+        java.time.Period.between(LocalDate.now(), date).days
+    } catch (e: Exception) { 999 }
+
     val color = when {
         daysUntil < 0 -> Color.Gray
         daysUntil <= 3 -> Danger
@@ -102,113 +112,53 @@ fun ExamItem(exam: ExamEntity, onDelete: () -> Unit) {
         else -> Primary
     }
 
-    val breathingAlpha = rememberBreathingAlpha(
-        active = daysUntil in 0..3,
-        durationMillis = 1500
-    )
-
     Card(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box {
-            // Accent strip
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .align(Alignment.TopCenter)
-                    .background(color)
-            )
-
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(exam.subject, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                    // Days badge
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                color.copy(
-                                    alpha = if (daysUntil in 0..3) breathingAlpha else 0.15f
-                                )
-                            )
-                    ) {
-                        Text(
-                            when {
-                                daysUntil < 0 -> "انتهى"
-                                daysUntil == 0 -> "اليوم!"
-                                else -> "$daysUntil يوم"
-                            },
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = color,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("${exam.type} • ${exam.examDate}", style = MaterialTheme.typography.bodyMedium)
-                }
-
-                if (exam.time.isNotBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("⏰ ${exam.time}", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-
-                if (exam.room.isNotBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("📍 ${exam.room}", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(exam.subject, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(color.copy(alpha = 0.15f))
                 ) {
-                    OutlinedButton(
-                        onClick = { /* TODO: Edit */ },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) { Text("️ تعديل") }
-
-                    Button(
-                        onClick = onDelete,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Danger.copy(alpha = 0.1f)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("🗑️ حذف", color = Danger)
-                    }
+                    Text(
+                        when {
+                            daysUntil < 0 -> "انتهى"
+                            daysUntil == 0 -> "اليوم!"
+                            else -> "$daysUntil يوم"
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = color,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text("${exam.type} • ${exam.examDate}", style = MaterialTheme.typography.bodyMedium)
+            if (exam.time.isNotBlank()) Text(" ${exam.time}", style = MaterialTheme.typography.bodySmall)
+            if (exam.room.isNotBlank()) Text(" ${exam.room}", style = MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { /* TODO: Edit */ },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) { Text("️ تعديل") }
+                Button(
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Danger.copy(alpha = 0.1f)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("🗑️ حذف", color = Danger)
                 }
             }
         }
@@ -247,11 +197,4 @@ fun AddExamDialog(onDismiss: () -> Unit, onAdd: (String, String, String, String,
             TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") }
         }
     )
-}
-
-fun daysUntilExam(dateStr: String): Int {
-    return try {
-        val date = LocalDate.parse(dateStr)
-        java.time.Period.between(LocalDate.now(), date).days
-    } catch (e: Exception) { 999 }
 }

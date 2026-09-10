@@ -17,10 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.unimanager.app.data.entity.FileEntity
 import com.unimanager.app.data.entity.FolderEntity
@@ -41,10 +40,10 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("📁 الملفات", fontWeight = FontWeight.Bold) },
-                actions = {
-                    IconButton(onClick = { /* TODO: Search */ }) {
-                        Icon(Icons.Filled.Search, contentDescription = "بحث")
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("📁", fontSize = 24.sp, modifier = Modifier.padding(end = 8.dp))
+                        Text("الملفات", fontWeight = FontWeight.Bold)
                     }
                 }
             )
@@ -61,8 +60,7 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
                 modifier = Modifier.scale(fabScale),
-                shape = RoundedCornerShape(16.dp),
-                containerColor = MaterialTheme.colorScheme.primary
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "إضافة")
             }
@@ -79,14 +77,25 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
             if (rootFolders.isNotEmpty()) {
                 item {
                     AnimatedEntrance(visible = screenVisible, delayMillis = 0) {
-                        Text("📂 المجلدات", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(4.dp)
+                                    .height(24.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(Primary)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("📂 المجلدات", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
                 items(rootFolders) { folder ->
                     SlideUpEntrance(visible = screenVisible) {
-                        FolderItem(folder = folder, fileCount = allFiles.count { it.folderId == folder.id }) {
-                            // TODO: Navigate to folder
-                        }
+                        FolderItem(folder = folder, fileCount = allFiles.count { it.folderId == folder.id })
                     }
                 }
             }
@@ -95,14 +104,25 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
             if (allFiles.isNotEmpty()) {
                 item {
                     AnimatedEntrance(visible = screenVisible, delayMillis = 100) {
-                        Text("📄 الملفات", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(4.dp)
+                                    .height(24.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(Secondary)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("📄 الملفات", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
                 items(allFiles.take(10)) { file ->
                     SlideUpEntrance(visible = screenVisible) {
-                        FileItem(file = file) {
-                            // TODO: Open file
-                        }
+                        FileItem(file = file)
                     }
                 }
             }
@@ -116,9 +136,10 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("📂", style = MaterialTheme.typography.displayLarge)
+                            Text("", fontSize = 64.sp)
                             Spacer(Modifier.height(16.dp))
-                            Text("لا توجد ملفات بعد", style = MaterialTheme.typography.titleLarge)
+                            Text("لا توجد ملفات بعد", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(8.dp))
                             Text("اضغط + لإنشاء مجلد أو رفع ملف")
                         }
                     }
@@ -126,10 +147,18 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
             }
         }
     }
+
+    if (showAddDialog) {
+        AddFileDialog(
+            onDismiss = { showAddDialog = false },
+            onAddFile = { name, ext -> /* TODO */ showAddDialog = false },
+            onAddFolder = { name -> /* TODO */ showAddDialog = false }
+        )
+    }
 }
 
 @Composable
-fun FolderItem(folder: FolderEntity, fileCount: Int, onClick: () -> Unit) {
+fun FolderItem(folder: FolderEntity, fileCount: Int) {
     val isPressed = remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed.value) 0.97f else 1f,
@@ -146,12 +175,7 @@ fun FolderItem(folder: FolderEntity, fileCount: Int, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .scale(scale)
-            .clickable(
-                onClick = {
-                    isPressed.value = true
-                    onClick()
-                }
-            ),
+            .clickable { isPressed.value = true },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Primary.copy(alpha = if (isDark) 0.12f else 0.08f)
@@ -171,7 +195,7 @@ fun FolderItem(folder: FolderEntity, fileCount: Int, onClick: () -> Unit) {
                     .background(Primary.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text("📁", style = MaterialTheme.typography.titleLarge)
+                Text("📁", fontSize = 24.sp)
             }
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -188,7 +212,7 @@ fun FolderItem(folder: FolderEntity, fileCount: Int, onClick: () -> Unit) {
 }
 
 @Composable
-fun FileItem(file: FileEntity, onClick: () -> Unit) {
+fun FileItem(file: FileEntity) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val fileColor = when (file.type) {
         "pdf" -> Danger
@@ -202,7 +226,7 @@ fun FileItem(file: FileEntity, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable { },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -222,13 +246,13 @@ fun FileItem(file: FileEntity, onClick: () -> Unit) {
                 Text(
                     when (file.type) {
                         "pdf" -> "📄"
-                        "doc" -> "📝"
-                        "img" -> "🖼️"
-                        "video" -> "🎬"
+                        "doc" -> ""
+                        "img" -> "️"
+                        "video" -> ""
                         "audio" -> "🎵"
                         else -> "📎"
                     },
-                    style = MaterialTheme.typography.titleMedium
+                    fontSize = 22.sp
                 )
             }
             Spacer(Modifier.width(12.dp))
@@ -255,6 +279,74 @@ fun FileItem(file: FileEntity, onClick: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun AddFileDialog(
+    onDismiss: () -> Unit,
+    onAddFile: (String, String) -> Unit,
+    onAddFolder: (String) -> Unit
+) {
+    var isFolder by remember { mutableStateOf(true) }
+    var name by remember { mutableStateOf("") }
+    var extension by remember { mutableStateOf("pdf") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = { Text("إضافة جديد", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = isFolder,
+                        onClick = { isFolder = true },
+                        label = { Text("📁 مجلد") },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    FilterChip(
+                        selected = !isFolder,
+                        onClick = { isFolder = false },
+                        label = { Text(" ملف") },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("الاسم") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
+
+                if (!isFolder) {
+                    OutlinedTextField(
+                        value = extension,
+                        onValueChange = { extension = it },
+                        label = { Text("الامتداد") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = name.isNotBlank(),
+                onClick = {
+                    if (isFolder) onAddFolder(name)
+                    else onAddFile(name, extension)
+                },
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("إضافة") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") }
+        }
+    )
 }
 
 fun formatFileSize(bytes: Long): String {
