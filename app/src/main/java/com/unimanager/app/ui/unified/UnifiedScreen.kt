@@ -64,7 +64,7 @@ fun UnifiedScreen(viewModel: AppViewModel) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddDialog = tabs[selectedTab].name },
+                onClick = { showAddDialog = tabs[selectedTab].label },
                 shape = RoundedCornerShape(16.dp),
                 containerColor = tabs[selectedTab].color
             ) {
