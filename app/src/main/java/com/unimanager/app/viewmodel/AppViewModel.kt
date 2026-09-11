@@ -1,10 +1,12 @@
 package com.unimanager.app.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.unimanager.app.data.entity.*
 import com.unimanager.app.data.repository.AppRepository
 import com.unimanager.app.ui.components.UiState
+import com.unimanager.app.util.ExamNotificationScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -12,8 +14,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AppViewModel @Inject constructor(
+    application: Application,
     private val repository: AppRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
+
+    private val notificationScheduler = ExamNotificationScheduler(application)
 
     // ====== Data Flows (StateFlow for performance) ======
 
@@ -224,6 +229,11 @@ class AppViewModel @Inject constructor(
                 repository.insertTask(task)
                 _uiState.value = UiState.Success(Unit)
                 _successMessage.value = "تم إضافة المهمة بنجاح"
+
+                // جدولة الإشعارات
+                if (!task.dueDate.isNullOrBlank()) {
+                    notificationScheduler.scheduleTaskNotification(task)
+                }
             } catch (e: Exception) {
                 _uiState.value = UiState.Error("فشل إضافة المهمة", e)
                 _errorMessage.value = "فشل إضافة المهمة: ${e.message}"
@@ -247,6 +257,7 @@ class AppViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.deleteTask(task)
+                notificationScheduler.cancelTaskNotifications(task.id)
             } catch (e: Exception) {
                 _errorMessage.value = "فشل حذف المهمة"
                 android.util.Log.e("AppViewModel", "Failed to delete task", e)
@@ -311,6 +322,9 @@ class AppViewModel @Inject constructor(
                 repository.insertExam(exam)
                 _uiState.value = UiState.Success(Unit)
                 _successMessage.value = "تم إضافة الامتحان بنجاح"
+
+                // جدولة الإشعارات
+                notificationScheduler.scheduleExamNotification(exam)
             } catch (e: Exception) {
                 _uiState.value = UiState.Error("فشل إضافة الامتحان", e)
                 _errorMessage.value = "فشل إضافة الامتحان: ${e.message}"
@@ -334,6 +348,7 @@ class AppViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.deleteExam(exam)
+                notificationScheduler.cancelExamNotifications(exam.id)
             } catch (e: Exception) {
                 _errorMessage.value = "فشل حذف الامتحان"
                 android.util.Log.e("AppViewModel", "Failed to delete exam", e)

@@ -57,6 +57,11 @@
     public static ** valueOf(java.lang.String);
 }
 
+# WorkManager
+-keep class * extends androidx.work.Worker { *; }
+-keep class * extends androidx.work.ListenableWorker { *; }
+-dontwarn androidx.work.**
+
 # Generic keep rules
 -keep class * implements android.os.Parcelable {
   public static final android.os.Parcelable$Creator *;
