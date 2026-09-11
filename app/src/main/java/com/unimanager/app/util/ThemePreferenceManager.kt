@@ -3,7 +3,7 @@ package com.unimanager.app.util
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesName
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -17,8 +17,8 @@ class ThemePreferenceManager(private val context: Context) {
 
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-    private val THEME_MODE_KEY = booleanPreferencesName("dark_theme")
-    private val DYNAMIC_COLOR_KEY = booleanPreferencesName("dynamic_color")
+    private val THEME_MODE_KEY = booleanPreferencesKey("dark_theme")
+    private val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
 
     /**
      * الحصول على تفضيل الوضع الليلي
@@ -33,7 +33,7 @@ class ThemePreferenceManager(private val context: Context) {
      */
     val useDynamicColor: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
-            preferences[DYNAMIC_COLOR_KEY] ?: true // default = true
+            preferences[DYNAMIC_COLOR_KEY] ?: false // default = false (يحافظ على هوية ألوان التطبيق)
         }
 
     /**

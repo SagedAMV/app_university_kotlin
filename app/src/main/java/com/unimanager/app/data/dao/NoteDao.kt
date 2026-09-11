@@ -12,8 +12,6 @@ interface NoteDao {
     @Query("SELECT * FROM notes ORDER BY updatedAt DESC")
     suspend fun getAllNotesSync(): List<NoteEntity>
 
-    @Query("SELECT * FROM notes WHERE id = :id")
-
     @Insert
     suspend fun insert(note: NoteEntity): Long
 
@@ -25,8 +23,6 @@ interface NoteDao {
 
     @Delete
     suspend fun delete(note: NoteEntity)
-
-    @Query("DELETE FROM notes WHERE id = :id")
 
     @Query("DELETE FROM notes")
     suspend fun deleteAll()

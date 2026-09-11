@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavType
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.unimanager.app.ui.backup.BackupScreen
 import com.unimanager.app.ui.components.AnimatedBottomNavBar
 import com.unimanager.app.ui.dashboard.DashboardScreen
@@ -45,7 +47,7 @@ fun AppNavigation(viewModel: AppViewModel) {
 
     // Theme state
     val isDarkTheme by themeManager.isDarkTheme.collectAsState(initial = false)
-    val useDynamicColor by themeManager.useDynamicColor.collectAsState(initial = true)
+    val useDynamicColor by themeManager.useDynamicColor.collectAsState(initial = false)
     val scope = rememberCoroutineScope()
 
     // Apply theme
@@ -81,7 +83,14 @@ fun AppNavigation(viewModel: AppViewModel) {
                 ) { DashboardScreen(viewModel = viewModel, navController = navController) }
 
                 composable(
-                    Routes.Files.route,
+                    Routes.Files.pattern,
+                    arguments = listOf(
+                        navArgument(Routes.Files.FOLDER_ID_ARG) {
+                            type = NavType.StringType
+                            nullable = true
+                            defaultValue = null
+                        }
+                    ),
                     enterTransition = { fadeIn(tween(300)) + slideInHorizontally { -it } },
                     exitTransition = { fadeOut(tween(200)) },
                     popEnterTransition = { fadeIn(tween(300)) },

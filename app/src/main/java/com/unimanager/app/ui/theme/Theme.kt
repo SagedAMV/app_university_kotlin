@@ -51,7 +51,7 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun UniManagerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -67,19 +67,16 @@ fun UniManagerTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        shapes = Shapes(),
+        shapes = AppShapes,
         content = content
     )
 }
 
-// Custom shapes for 2026 design
-@Composable
-fun Shapes(): Shapes {
-    return Shapes(
-        extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-        small = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-        medium = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-        large = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-        extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(32.dp)
-    )
-}
+// Custom shapes for 2026 design (قيمة ثابتة تُنشأ مرة واحدة)
+private val AppShapes = Shapes(
+    extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+    small = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+    medium = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+    large = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+    extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(32.dp)
+)

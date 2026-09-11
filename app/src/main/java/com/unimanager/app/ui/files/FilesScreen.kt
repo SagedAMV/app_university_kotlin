@@ -1,7 +1,12 @@
 package com.unimanager.app.ui.files
 
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -9,7 +14,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,17 +26,26 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.unimanager.app.data.entity.FileEntity
 import com.unimanager.app.data.entity.FolderEntity
 import com.unimanager.app.ui.components.*
+import com.unimanager.app.ui.navigation.Routes
 import com.unimanager.app.ui.theme.*
+import com.unimanager.app.util.Validation
 import com.unimanager.app.viewmodel.AppViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +57,7 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
 
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
@@ -59,16 +73,47 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
         }
     }
 
+    // رسائل محلية (فشل اختيار/فتح الملف)
+    var localMessage by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(localMessage) {
+        localMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            localMessage = null
+        }
+    }
+
     var showAddDialog by remember { mutableStateOf(false) }
     var screenVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
-    // Folder navigation state
-    var currentFolderId by remember { mutableStateOf<Long?>(null) }
+    // Folder navigation state (يدعم فتح مجلد قادم من شاشة المجرة عبر وسيط التنقل)
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val initialFolderId = navBackStackEntry
+        ?.arguments?.getString(Routes.Files.FOLDER_ID_ARG)?.toLongOrNull()
+    var currentFolderId by remember(initialFolderId) { mutableStateOf(initialFolderId) }
+
     val childFolders by viewModel.getChildFolders(currentFolderId).collectAsState()
     val filesInFolder by viewModel.getFilesInFolder(currentFolderId).collectAsState()
 
     LaunchedEffect(Unit) { screenVisible = true }
+
+    // منتقي ملفات حقيقي (Storage Access Framework)
+    val pickFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            scope.launch {
+                val result = runCatching {
+                    importDocument(context, uri, currentFolderId)
+                }
+                result.onSuccess { entity ->
+                    viewModel.insertFile(entity)
+                }.onFailure { e ->
+                    localMessage = e.message ?: "تعذّرت إضافة الملف"
+                }
+            }
+        }
+    }
 
     // Display folders and files based on current folder
     val displayFolders = if (currentFolderId == null) rootFolders else childFolders
@@ -184,23 +229,7 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
                             FileItem(
                                 file = file,
                                 onFileClick = {
-                                    // Open file if it exists
-                                    if (file.filePath.isNotBlank()) {
-                                        try {
-                                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                                val uri = FileProvider.getUriForFile(
-                                                    context,
-                                                    "${context.packageName}.fileprovider",
-                                                    File(file.filePath)
-                                                )
-                                                setDataAndType(uri, file.mimeType)
-                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                            }
-                                            context.startActivity(intent)
-                                        } catch (e: Exception) {
-                                            android.util.Log.e("FilesScreen", "Cannot open file: ${e.message}")
-                                        }
-                                    }
+                                    openFile(context, file) { msg -> localMessage = msg }
                                 },
                                 onFavoriteToggle = {
                                     viewModel.toggleFavorite(file.id, !file.isFavorite)
@@ -226,7 +255,7 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
                             EmptyStateEnhanced(
                                 icon = "📂",
                                 title = "لا توجد ملفات بعد",
-                                subtitle = "اضغط + لإنشاء مجلد أو إضافة ملف",
+                                subtitle = "اضغط + لإضافة ملف حقيقي من جهازك أو إنشاء مجلد",
                                 actionText = "إضافة",
                                 onActionClick = { showAddDialog = true }
                             )
@@ -240,18 +269,11 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
     if (showAddDialog) {
         AddFileDialog(
             onDismiss = { showAddDialog = false },
-            onAddFile = { name, ext ->
-                viewModel.insertFile(
-                    FileEntity(
-                        name = name,
-                        extension = ext,
-                        type = determineFileType(ext),
-                        mimeType = getMimeType(ext),
-                        size = 0L,
-                        folderId = currentFolderId,
-                        filePath = ""
-                    )
-                )
+            onPickFile = {
+                showAddDialog = false
+                // SAF: */* يتيح اختيار أي نوع ملف
+                runCatching { pickFileLauncher.launch(arrayOf("*/*")) }
+                    .onFailure { localMessage = "تعذّر فتح منتقي الملفات على هذا الجهاز" }
             },
             onAddFolder = { name ->
                 viewModel.insertFolder(
@@ -261,6 +283,109 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
         )
     }
 }
+
+/**
+ * فتح ملف عبر تطبيقات النظام باستخدام FileProvider.
+ * يُبلغ المستخدم عبر [onMessage] عند غياب الملف أو عدم وجود تطبيق قادر على فتحه.
+ */
+private fun openFile(
+    context: Context,
+    file: FileEntity,
+    onMessage: (String) -> Unit
+) {
+    val physicalFile = File(file.filePath)
+    if (file.filePath.isBlank() || !physicalFile.exists()) {
+        onMessage("الملف غير موجود على الجهاز")
+        return
+    }
+    try {
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            physicalFile
+        )
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, file.mimeType.ifBlank { "*/*" })
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        onMessage("لا يوجد تطبيق على جهازك قادر على فتح هذا النوع من الملفات")
+    } catch (e: Exception) {
+        android.util.Log.e("FilesScreen", "Cannot open file: ${e.message}", e)
+        onMessage("تعذّر فتح الملف")
+    }
+}
+
+/**
+ * نسخ مستند اختاره المستخدم عبر SAF إلى تخزين التطبيق الداخلي،
+ * وبناء كيان FileEntity ببيانات حقيقية (الاسم، النوع، الحجم، المسار).
+ */
+private suspend fun importDocument(
+    context: Context,
+    uri: Uri,
+    folderId: Long?
+): FileEntity = withContext(Dispatchers.IO) {
+    val resolver = context.contentResolver
+
+    val displayName = queryDisplayName(context, uri)
+        ?: "document_${System.currentTimeMillis()}"
+
+    val ext = displayName.substringAfterLast('.', "").lowercase()
+    if (ext.isBlank() || ext !in Validation.ALLOWED_EXTENSIONS) {
+        throw IOException("نوع الملف غير مدعوم (.${ext.ifBlank { "؟" }})")
+    }
+
+    val baseName = displayName.substringBeforeLast('.', displayName)
+    val mimeType = resolver.getType(uri)?.takeIf { it.isNotBlank() } ?: getMimeType(ext)
+
+    val dir = File(context.filesDir, "documents").apply { mkdirs() }
+    val safeName = sanitizeFileName(displayName)
+    var destination = File(dir, safeName)
+    var counter = 1
+    while (destination.exists()) {
+        val stem = safeName.substringBeforeLast('.', safeName)
+        destination = File(dir, "${stem}_$counter.$ext")
+        counter++
+    }
+
+    resolver.openInputStream(uri)?.use { input ->
+        FileOutputStream(destination).use { output ->
+            input.copyTo(output)
+        }
+    } ?: throw IOException("تعذّر قراءة الملف المختار")
+
+    FileEntity(
+        name = baseName,
+        extension = ext,
+        type = determineFileType(ext),
+        mimeType = mimeType,
+        size = destination.length(),
+        folderId = folderId,
+        filePath = destination.absolutePath
+    )
+}
+
+private fun queryDisplayName(context: Context, uri: Uri): String? {
+    runCatching {
+        context.contentResolver.query(
+            uri,
+            arrayOf(OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null
+        )?.use { cursor ->
+            val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (index >= 0 && cursor.moveToFirst()) {
+                return cursor.getString(index)
+            }
+        }
+    }
+    return uri.lastPathSegment?.substringAfterLast('/')
+}
+
+private fun sanitizeFileName(name: String): String =
+    name.replace(Regex("[\\\\/:*?\"<>|]"), "_").ifBlank { "file" }
 
 @Composable
 private fun FilesSectionTitle(title: String, color: Color) {
@@ -284,6 +409,10 @@ private fun FilesSectionTitle(title: String, color: Color) {
     }
 }
 
+/** تحويل لون المجلد المخزّن كسلسلة HEX إلى Color مع قيمة احتياطية */
+fun folderTint(hex: String): Color =
+    runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(Primary)
+
 /**
  * Folder Item - يعرض مجلد مع عدد الملفات
  */
@@ -293,16 +422,11 @@ fun FolderItem(
     fileCount: Int,
     onFolderClick: () -> Unit
 ) {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val pressScale by animateFloatAsState(
-        targetValue = 1f,
-        label = "folderScale"
-    )
+    val tint = folderTint(folder.color)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(pressScale)
             .clickable(onClick = onFolderClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
@@ -321,13 +445,13 @@ fun FolderItem(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(folder.color.hashCode()).copy(alpha = 0.15f)),
+                    .background(tint.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Filled.Folder,
                     contentDescription = folder.name,
-                    tint = Color(folder.color.hashCode()),
+                    tint = tint,
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -368,7 +492,6 @@ fun FileItem(
     onFileClick: () -> Unit,
     onFavoriteToggle: () -> Unit
 ) {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val fileColor = getFileColor(file.type)
     val fileIcon = getFileIcon(file.type)
 
@@ -450,16 +573,13 @@ fun FileItem(
 @Composable
 fun AddFileDialog(
     onDismiss: () -> Unit,
-    onAddFile: (name: String, extension: String) -> Unit,
+    onPickFile: () -> Unit,
     onAddFolder: (name: String) -> Unit
 ) {
     var selectedMode by remember { mutableStateOf("file") }
-    var fileName by remember { mutableStateOf("") }
-    var fileExt by remember { mutableStateOf("pdf") }
     var folderName by remember { mutableStateOf("") }
+    var folderError by remember { mutableStateOf<String?>(null) }
     val sheetState = rememberModalBottomSheetState()
-
-    val extensions = listOf("pdf", "doc", "ppt", "jpg", "png", "mp4", "mp3", "zip", "txt")
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -538,99 +658,85 @@ fun AddFileDialog(
             Spacer(Modifier.height(24.dp))
 
             if (selectedMode == "file") {
-                OutlinedTextField(
-                    value = fileName,
-                    onValueChange = { fileName = it },
-                    label = { Text("اسم الملف") },
+                // اختيار ملف حقيقي من الجهاز
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    leadingIcon = { Icon(Icons.Filled.Description, contentDescription = null) }
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                Text("نوع الملف", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.height(8.dp))
-
-                // Extension selector - scrollable
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    extensions.take(4).forEach { ext ->
-                        FilterChip(
-                            selected = fileExt == ext,
-                            onClick = { fileExt = ext },
-                            label = { Text(ext.uppercase()) },
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                    }
-                }
-                Spacer(Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    extensions.drop(4).forEach { ext ->
-                        FilterChip(
-                            selected = fileExt == ext,
-                            onClick = { fileExt = ext },
-                            label = { Text(ext.uppercase()) },
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                    Icon(
+                        Icons.Filled.UploadFile,
+                        contentDescription = null,
+                        tint = Primary,
+                        modifier = Modifier.size(56.dp)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "اختر ملفاً من جهازك (PDF، مستندات Office، صور، فيديو، صوت...)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "سيتم نسخ الملف داخل التطبيق ليظل متاحاً للفتح لاحقاً.",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(
+                        onClick = onPickFile,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Filled.FolderOpen, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("اختيار ملف من الجهاز")
                     }
                 }
             } else {
                 OutlinedTextField(
                     value = folderName,
-                    onValueChange = { folderName = it },
+                    onValueChange = { folderName = it; folderError = null },
                     label = { Text("اسم المجلد") },
+                    isError = folderError != null,
+                    supportingText = folderError?.let { msg ->
+                        { Text(msg, color = MaterialTheme.colorScheme.error) }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Filled.Folder, contentDescription = null) }
                 )
-            }
 
-            Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(32.dp))
 
-            // Actions
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) { Text("إلغاء") }
+                // Actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text("إلغاء") }
 
-                Button(
-                    onClick = {
-                        when (selectedMode) {
-                            "file" -> {
-                                if (fileName.isNotBlank()) {
-                                    onAddFile(fileName, fileExt)
-                                    onDismiss()
-                                }
+                    Button(
+                        onClick = {
+                            val result = Validation.validateName(folderName)
+                            val failure = result.exceptionOrNull()?.message
+                            if (failure != null) {
+                                folderError = failure
+                            } else {
+                                onAddFolder(Validation.sanitizeInput(folderName))
+                                onDismiss()
                             }
-                            "folder" -> {
-                                if (folderName.isNotBlank()) {
-                                    onAddFolder(folderName)
-                                    onDismiss()
-                                }
-                            }
-                        }
-                    },
-                    enabled = when (selectedMode) {
-                        "file" -> fileName.isNotBlank()
-                        "folder" -> folderName.isNotBlank()
-                        else -> false
-                    },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) { Text("إضافة") }
+                        },
+                        enabled = folderName.isNotBlank(),
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text("إضافة") }
+                }
             }
 
             Spacer(Modifier.height(16.dp))
@@ -642,13 +748,13 @@ fun AddFileDialog(
 fun determineFileType(extension: String): String {
     return when (extension.lowercase()) {
         "pdf" -> "pdf"
-        "doc", "docx" -> "doc"
-        "xls", "xlsx" -> "doc"
+        "doc", "docx", "rtf" -> "doc"
+        "xls", "xlsx", "csv" -> "doc"
         "ppt", "pptx" -> "doc"
-        "jpg", "jpeg", "png", "gif", "webp" -> "img"
-        "mp4", "avi", "mkv", "mov" -> "video"
-        "mp3", "wav", "m4a", "ogg" -> "audio"
-        "zip", "rar", "7z" -> "archive"
+        "jpg", "jpeg", "png", "gif", "webp", "bmp" -> "img"
+        "mp4", "avi", "mkv", "mov", "wmv" -> "video"
+        "mp3", "wav", "m4a", "ogg", "flac" -> "audio"
+        "zip", "rar", "7z", "tar", "gz" -> "archive"
         "txt", "md" -> "code"
         else -> "other"
     }
@@ -657,15 +763,32 @@ fun determineFileType(extension: String): String {
 fun getMimeType(extension: String): String {
     return when (extension.lowercase()) {
         "pdf" -> "application/pdf"
-        "doc", "docx" -> "application/msword"
-        "xls", "xlsx" -> "application/vnd.ms-excel"
-        "ppt", "pptx" -> "application/vnd.ms-powerpoint"
+        "doc" -> "application/msword"
+        "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        "xls" -> "application/vnd.ms-excel"
+        "xlsx" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        "ppt" -> "application/vnd.ms-powerpoint"
+        "pptx" -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        "rtf" -> "application/rtf"
+        "csv" -> "text/csv"
         "jpg", "jpeg" -> "image/jpeg"
         "png" -> "image/png"
         "gif" -> "image/gif"
+        "webp" -> "image/webp"
+        "bmp" -> "image/bmp"
         "mp4" -> "video/mp4"
+        "avi" -> "video/x-msvideo"
+        "mkv" -> "video/x-matroska"
+        "mov" -> "video/quicktime"
         "mp3" -> "audio/mpeg"
-        "txt" -> "text/plain"
+        "wav" -> "audio/wav"
+        "m4a" -> "audio/mp4"
+        "ogg" -> "audio/ogg"
+        "flac" -> "audio/flac"
+        "zip" -> "application/zip"
+        "rar" -> "application/vnd.rar"
+        "7z" -> "application/x-7z-compressed"
+        "txt", "md" -> "text/plain"
         else -> "*/*"
     }
 }

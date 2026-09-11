@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -85,7 +86,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = MaterialTheme.colorScheme.background
                 ),
                 actions = {
                     IconButton(onClick = { navController.navigate(Routes.Settings.route) }) {
@@ -164,7 +165,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 350) {
                     HeroBentoCard(
-                        icon = "",
+                        icon = "📅",
                         title = "محاضرات اليوم",
                         subtitle = "$lectureCount محاضرة مجدولة",
                         color = Primary,
@@ -477,7 +478,7 @@ private fun HeroBentoCard(
                 Text(subtitle, style = MaterialTheme.typography.bodyMedium)
             }
             Icon(
-                Icons.Filled.ArrowForward,
+                Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
                 tint = color,
                 modifier = Modifier.size(24.dp)
@@ -551,7 +552,6 @@ private fun QuickAction(
     }
 }
 
-@Composable
 @Composable
 private fun ActivityCard(
     icon: String,

@@ -18,8 +18,6 @@ interface FolderDao {
     @Query("SELECT * FROM folders WHERE parentId = :parentId ORDER BY name")
     fun getChildFolders(parentId: Long?): Flow<List<FolderEntity>>
 
-    @Query("SELECT * FROM folders WHERE id = :id")
-
     @Insert
     suspend fun insert(folder: FolderEntity): Long
 
@@ -31,8 +29,6 @@ interface FolderDao {
 
     @Delete
     suspend fun delete(folder: FolderEntity)
-
-    @Query("DELETE FROM folders WHERE id = :id")
 
     @Query("DELETE FROM folders")
     suspend fun deleteAll()

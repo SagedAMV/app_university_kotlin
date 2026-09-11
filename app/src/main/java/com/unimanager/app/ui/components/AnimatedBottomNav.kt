@@ -26,7 +26,9 @@ fun AnimatedBottomNavBar(
         tonalElevation = 0.dp
     ) {
         navItems.forEach { item ->
-            val selected = currentBackStackEntry?.destination?.hierarchy?.any { it.route == item.route } == true
+            val selected = currentBackStackEntry?.destination?.hierarchy?.any {
+                it.route == item.route || it.route?.startsWith("${item.route}?") == true
+            } == true
 
             val scale by animateFloatAsState(
                 targetValue = if (selected) 1.1f else 1f,

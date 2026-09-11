@@ -15,8 +15,6 @@ interface ExamDao {
     @Query("SELECT * FROM exams WHERE examDate >= date('now') ORDER BY examDate ASC")
     fun getUpcomingExams(): Flow<List<ExamEntity>>
 
-    @Query("SELECT * FROM exams WHERE id = :id")
-
     @Insert
     suspend fun insert(exam: ExamEntity): Long
 
@@ -29,11 +27,9 @@ interface ExamDao {
     @Delete
     suspend fun delete(exam: ExamEntity)
 
-    @Query("DELETE FROM exams WHERE id = :id")
-
     @Query("DELETE FROM exams")
     suspend fun deleteAll()
 
     @Query("SELECT COUNT(*) FROM exams WHERE examDate >= date('now')")
-    fun getUpcomingCount(): Flow<Int>
+    fun getUpcomingExamCount(): Flow<Int>
 }

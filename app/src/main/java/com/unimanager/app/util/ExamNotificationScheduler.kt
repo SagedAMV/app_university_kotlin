@@ -4,16 +4,22 @@ import android.content.Context
 import androidx.work.*
 import com.unimanager.app.data.entity.ExamEntity
 import com.unimanager.app.data.entity.TaskEntity
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Exam & Task Notification Scheduler
  * يستخدم WorkManager لجدولة الإشعارات
  */
-class ExamNotificationScheduler(private val context: Context) {
+@Singleton
+class ExamNotificationScheduler @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     companion object {
         private const val WORK_TAG_EXAM = "exam_notification"
@@ -38,7 +44,6 @@ class ExamNotificationScheduler(private val context: Context) {
                     title = "تذكير بالامتحان",
                     message = "${exam.subject} غداً",
                     triggerTime = oneDayBefore,
-                    notificationId = (exam.id * 10 + 1).toInt(),
                     channel = "exams"
                 )
             }
@@ -51,7 +56,6 @@ class ExamNotificationScheduler(private val context: Context) {
                     title = "تذكير بالامتحان",
                     message = "${exam.subject} بعد ساعة",
                     triggerTime = oneHourBefore,
-                    notificationId = (exam.id * 10 + 2).toInt(),
                     channel = "exams"
                 )
             }
@@ -63,7 +67,6 @@ class ExamNotificationScheduler(private val context: Context) {
                     title = "الامتحان الآن",
                     message = "${exam.subject} - ${exam.room}",
                     triggerTime = examDateTime,
-                    notificationId = (exam.id * 10 + 3).toInt(),
                     channel = "exams"
                 )
             }
@@ -90,7 +93,6 @@ class ExamNotificationScheduler(private val context: Context) {
                 title = "تذكير بالمهمة",
                 message = task.title,
                 triggerTime = dueDateTime,
-                notificationId = (task.id + 1000).toInt(),
                 channel = "tasks"
             )
         } catch (e: Exception) {
@@ -117,17 +119,20 @@ class ExamNotificationScheduler(private val context: Context) {
     }
 
     /**
-     * جدولة إشعار عام
+     * جدولة إشعار عام.
+     * معرّف الإشعار يُشتق من workTag الفريد لكل عنصر/توقيت،
+     * مما يمنع التصادم بين المهام والامتحانات وتجاوز سعة Int.
      */
     private fun scheduleNotification(
         workTag: String,
         title: String,
         message: String,
         triggerTime: LocalDateTime,
-        notificationId: Int,
         channel: String
     ) {
         val workManager = WorkManager.getInstance(context)
+
+        val notificationId = workTag.hashCode().takeIf { it != 0 } ?: 1
 
         val data = Data.Builder()
             .putString(NotificationWorker.KEY_TITLE, title)

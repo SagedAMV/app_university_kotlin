@@ -15,8 +15,6 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE isDone = 0 ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END, dueDate ASC")
     fun getPendingTasks(): Flow<List<TaskEntity>>
 
-    @Query("SELECT * FROM tasks WHERE id = :id")
-
     @Insert
     suspend fun insert(task: TaskEntity): Long
 
@@ -28,8 +26,6 @@ interface TaskDao {
 
     @Delete
     suspend fun delete(task: TaskEntity)
-
-    @Query("DELETE FROM tasks WHERE id = :id")
 
     @Query("DELETE FROM tasks")
     suspend fun deleteAll()

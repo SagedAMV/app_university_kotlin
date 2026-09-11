@@ -49,7 +49,8 @@ object Validation {
     fun validateEmail(email: String): Result<String> {
         return when {
             email.isBlank() -> Result.failure(Exception("البريد الإلكتروني مطلوب"))
-            !email.matches(Regex("^[A-Za-z0-9+_.-]+@(.+)$")) -> Result.failure(Exception("بريد إلكتروني غير صالح"))
+            !email.matches(Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+$")) ->
+                Result.failure(Exception("بريد إلكتروني غير صالح"))
             else -> Result.success(email.trim())
         }
     }
@@ -93,7 +94,7 @@ object Validation {
     }
 
     /**
-     * Sanitize input - إزالة الأحرف الخطيرة فقط
+     * Sanitize input - إزالة الأحرف الخطيرة فقط من الحقول القصيرة (الأسماء/العناوين).
      * إصلاح: لا نحذف الأحرف العربية أو الأكاديمية الشرعية
      */
     fun sanitizeInput(input: String): String {
@@ -102,6 +103,17 @@ object Validation {
             .take(MAX_NAME_LENGTH)
             .replace(Regex("[<>]"), "") // Remove HTML/XML brackets only
             .replace(Regex("[\\x00-\\x1F\\x7F]"), "") // Remove control characters
+    }
+
+    /**
+     * تنظيف الحقول النصية الطويلة (الأوصاف/المحتوى) بلا حد للطول،
+     * مع الإبقاء على الأسطر الجديدة وعلامات التبويب.
+     */
+    fun sanitizeText(input: String): String {
+        return input
+            .trim()
+            .replace(Regex("[<>]"), "")
+            .replace(Regex("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]"), "")
     }
 
     /**

@@ -22,33 +22,11 @@
 # Keep Backup classes
 -keep class com.unimanager.app.backup.** { *; }
 
-# Apache POI
--keep class org.apache.poi.** { *; }
--dontwarn org.apache.poi.**
--dontwarn org.openxmlformats.schemas.**
--dontwarn schemasMicrosoftComVml.**
-
-# Media3 ExoPlayer
--keep class androidx.media3.** { *; }
--dontwarn androidx.media3.**
-
 # Kotlin Coroutines
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
 -keepclassmembers class kotlinx.coroutines.** {
     volatile <fields>;
-}
-
-# Keep serialization
--keepattributes *Annotation*, InnerClasses
--dontnote kotlinx.serialization.AnnotationsKt
-
-# Kotlin serialization plugin will generate the serializers for following classes
--keepclassmembers class com.unimanager.app.data.entity.** {
-    *** Companion;
-}
--keepclasseswithmembers class com.unimanager.app.data.entity.** {
-    kotlinx.serialization.KSerializer serializer(...);
 }
 
 # Keep enum values

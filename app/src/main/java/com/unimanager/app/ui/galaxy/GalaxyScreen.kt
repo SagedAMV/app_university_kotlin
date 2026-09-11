@@ -2,6 +2,7 @@ package com.unimanager.app.ui.galaxy
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
@@ -18,10 +19,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.unimanager.app.ui.navigation.Routes
 import com.unimanager.app.viewmodel.AppViewModel
 import kotlin.math.cos
 import kotlin.math.sin
@@ -56,12 +60,18 @@ fun GalaxyScreen(viewModel: AppViewModel, navController: NavController) {
             )
         }
     ) { padding ->
-        Box(
+        // BoxWithConstraints يوفّر أبعاد الحاوية بالبكسل (Dp) بدل size الخاص بـ DrawScope
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .background(Color(0xFF0F172A))
         ) {
+            val density = LocalDensity.current
+            val widthPx = with(density) { maxWidth.toPx() }
+            val heightPx = with(density) { maxHeight.toPx() }
+            val minDimensionPx = minOf(widthPx, heightPx)
+
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -127,23 +137,27 @@ fun GalaxyScreen(viewModel: AppViewModel, navController: NavController) {
                 }
             }
 
-            // Display folder names
+            // Display folder names (أبعادها من BoxWithConstraints وليس من Canvas)
             folders.forEachIndexed { index, folder ->
                 val angle = (index.toFloat() / folders.size.coerceAtLeast(1)) * 360f
                 val angleRad = Math.toRadians(angle.toDouble())
-                val baseRadius = size.minDimension * 0.3f
-                val x = size.width / 2 + offset.x + (baseRadius * scale * cos(angleRad)).toFloat()
-                val y = size.height / 2 + offset.y + (baseRadius * scale * sin(angleRad)).toFloat()
+                val baseRadius = minDimensionPx * 0.3f
+                val x = widthPx / 2 + offset.x + (baseRadius * scale * cos(angleRad)).toFloat()
+                val y = heightPx / 2 + offset.y + (baseRadius * scale * sin(angleRad)).toFloat()
 
                 Box(
                     modifier = Modifier
                         .offset { IntOffset(x.roundToInt(), y.roundToInt() + 40) }
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable {
+                            // الانتقال الفعلي إلى محتوى ذلك المجلد
+                            navController.navigate(Routes.Files.folder(folder.id))
+                        }
                         .background(
                             color = Color.Black.copy(alpha = 0.7f),
                             shape = RoundedCornerShape(8.dp)
                         )
                         .padding(horizontal = 8.dp, vertical = 4.dp)
-                        .clip(RoundedCornerShape(8.dp))
                 ) {
                     Text(
                         folder.name,

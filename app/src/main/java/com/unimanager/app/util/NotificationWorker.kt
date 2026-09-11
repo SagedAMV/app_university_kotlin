@@ -31,7 +31,8 @@ class NotificationWorker(
         const val DEFAULT_CHANNEL = "general"
     }
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.Main) {
+    // CoroutineWorker يعمل أصلاً على Dispatcher خلفي (Default)
+    override suspend fun doWork(): Result = withContext(Dispatchers.Default) {
         try {
             val title = inputData.getString(KEY_TITLE) ?: "إشعار"
             val message = inputData.getString(KEY_MESSAGE) ?: ""

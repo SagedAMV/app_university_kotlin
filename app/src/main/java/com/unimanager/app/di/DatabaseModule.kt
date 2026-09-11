@@ -17,6 +17,11 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    /**
+     * المصدر الوحيد لقاعدة البيانات عبر التطبيق كله (بما فيه BackupHelper).
+     * الـ Migrations المعرّفة في AppDatabase مفعّلة هنا في مسار الإنتاج،
+     * لذلك لا تُحذف بيانات المستخدم عند الترقية.
+     */
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
@@ -25,6 +30,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "uni_manager_db"
         )
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
             .fallbackToDestructiveMigration()
             .build()
     }

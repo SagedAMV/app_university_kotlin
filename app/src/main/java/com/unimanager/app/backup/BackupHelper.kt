@@ -2,14 +2,22 @@ package com.unimanager.app.backup
 
 import android.content.Context
 import android.net.Uri
+import androidx.room.withTransaction
 import com.unimanager.app.data.AppDatabase
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.*
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class BackupHelper(private val context: Context) {
+@Singleton
+class BackupHelper @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val db: AppDatabase
+) {
 
     companion object {
         private const val BACKUP_VERSION = 2
@@ -21,8 +29,6 @@ class BackupHelper(private val context: Context) {
      */
     suspend fun exportBackup(uri: Uri): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val db = AppDatabase.getInstance(context)
-
             val backupData = JSONObject().apply {
                 put("version", BACKUP_VERSION)
                 put("timestamp", System.currentTimeMillis())
@@ -136,8 +142,6 @@ class BackupHelper(private val context: Context) {
      */
     suspend fun importBackup(uri: Uri): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val db = AppDatabase.getInstance(context)
-
             // Step 1: قراءة البيانات أولاً
             val jsonData = context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 inputStream.bufferedReader().readText()
@@ -163,8 +167,10 @@ class BackupHelper(private val context: Context) {
             val exams = parseExams(backupData.optJSONArray("exams"))
             val lectures = parseLectures(backupData.optJSONArray("lectures"))
 
-            // Step 4: الآن نحذف ونستورد في transaction
-            db.runInTransaction {
+            // Step 4: الآن نحذف ونستورد في transaction واحدة.
+            // نستخدم withTransaction من Room (suspend) بدل runInTransaction
+            // لأن دوال الـ DAO هنا كلها suspend ولا يمكن استدعاؤها داخل Runnable.
+            db.withTransaction {
                 try {
                     // Clear existing data
                     db.folderDao().deleteAll()
@@ -174,8 +180,10 @@ class BackupHelper(private val context: Context) {
                     db.examDao().deleteAll()
                     db.lectureDao().deleteAll()
 
-                    // Import folders أولاً (لأن الملفات تعتمد عليها)
-                    folders.forEach { db.folderDao().insertSync(it) }
+                    // Import folders أولاً (لأن الملفات تعتمد عليها).
+                    // ترتيب تصاعدي بالمعرّف يضمن استيراد المجلد الأب قبل ابنه
+                    // (احتراماً لقيد المفتاح الأجنبي مع CASCADE).
+                    folders.sortedBy { it.id }.forEach { db.folderDao().insertSync(it) }
 
                     // Import files
                     files.forEach { db.fileDao().insertSync(it) }

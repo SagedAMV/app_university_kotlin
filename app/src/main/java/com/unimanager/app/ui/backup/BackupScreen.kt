@@ -1,6 +1,5 @@
 package com.unimanager.app.ui.backup
 
-import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,32 +14,28 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.unimanager.app.backup.BackupHelper
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.unimanager.app.ui.theme.*
+import com.unimanager.app.viewmodel.BackupViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BackupScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
-    val backupHelper = remember { BackupHelper(context) }
-    
-    var isExporting by remember { mutableStateOf(false) }
-    var isImporting by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf<String?>(null) }
-    var isSuccess by remember { mutableStateOf(false) }
+    val viewModel: BackupViewModel = hiltViewModel()
+    val isExporting by viewModel.isExporting.collectAsState()
+    val isImporting by viewModel.isImporting.collectAsState()
+    val message by viewModel.message.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
         message?.let {
             snackbarHostState.showSnackbar(it)
-            message = null
+            viewModel.consumeMessage()
         }
     }
 
@@ -48,34 +43,14 @@ fun BackupScreen(onBack: () -> Unit) {
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri: Uri? ->
-        uri?.let {
-            isExporting = true
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                val result = backupHelper.exportBackup(it)
-                isExporting = false
-                result.fold(
-                    onSuccess = { msg -> message = msg },
-                    onFailure = { err -> message = "فشل التصدير: ${err.message}" }
-                )
-            }
-        }
+        uri?.let { viewModel.export(it) }
     }
 
     // Import launcher
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
-        uri?.let {
-            isImporting = true
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                val result = backupHelper.importBackup(it)
-                isImporting = false
-                result.fold(
-                    onSuccess = { msg -> message = msg },
-                    onFailure = { err -> message = "فشل الاستيراد: ${err.message}" }
-                )
-            }
-        }
+        uri?.let { viewModel.import(it) }
     }
 
     Scaffold(

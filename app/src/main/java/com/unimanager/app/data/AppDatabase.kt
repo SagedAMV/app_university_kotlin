@@ -1,8 +1,6 @@
 package com.unimanager.app.data
 
-import android.content.Context
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -31,9 +29,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun examDao(): ExamDao
 
     companion object {
-        @Volatile
-        private var INSTANCE: AppDatabase? = null
-
         // Migration 1 → 2: إضافة indices للملفات والمجلدات
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -62,21 +57,6 @@ abstract class AppDatabase : RoomDatabase() {
                 // Lectures indices
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_lectures_day ON lectures(day)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_lectures_timeFrom ON lectures(timeFrom)")
-            }
-        }
-
-        fun getInstance(context: Context): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "uni_manager_db"
-                )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-                    .fallbackToDestructiveMigration()
-                    .build()
-                INSTANCE = instance
-                instance
             }
         }
     }

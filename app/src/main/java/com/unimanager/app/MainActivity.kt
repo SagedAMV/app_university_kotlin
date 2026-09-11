@@ -53,8 +53,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Request permissions
-        requestFilePermissions()
+        // Request notification permission (Android 13+)
+        requestNotificationPermission()
 
         setContent {
             // Theme is now applied inside AppNavigation via ThemePreferenceManager
@@ -63,41 +63,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestFilePermissions() {
-        val permissions = mutableListOf<String>()
+    private fun requestNotificationPermission() {
+        // إذن الإشعارات مطلوب فقط من Android 13 (TIRAMISU) فما فوق.
+        // الملفات تُختار عبر SAF وتُنسخ للتخزين الداخلي، فلا حاجة لأذونات التخزين.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
 
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
-                // Android 13+ - Granular media permissions
-                permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
-                permissions.add(Manifest.permission.READ_MEDIA_VIDEO)
-                permissions.add(Manifest.permission.READ_MEDIA_AUDIO)
-                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+            if (!granted) {
+                Log.d(TAG, "Requesting POST_NOTIFICATIONS")
+                requestPermissionLauncher.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
+            } else {
+                Log.d(TAG, "Notification permission already granted")
             }
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                // Android 11-12
-                permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            }
-            else -> {
-                // Android 10 and below
-                permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
-                permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            }
-        }
-
-        // Check which permissions are not granted
-        val permissionsToRequest = permissions.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-
-        if (permissionsToRequest.isNotEmpty()) {
-            Log.d(TAG, "Requesting permissions: $permissionsToRequest")
-            requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
-        } else {
-            Log.d(TAG, "All permissions already granted")
         }
     }
 }

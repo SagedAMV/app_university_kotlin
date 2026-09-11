@@ -14,10 +14,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AppViewModel @Inject constructor(
     application: Application,
-    private val repository: AppRepository
+    private val repository: AppRepository,
+    private val notificationScheduler: ExamNotificationScheduler
 ) : AndroidViewModel(application) {
-
-    private val notificationScheduler = ExamNotificationScheduler(application)
 
     // ====== Data Flows (StateFlow for performance) ======
 
@@ -77,9 +76,19 @@ class AppViewModel @Inject constructor(
     // ====== Search ======
     // (search is done in-memory via filter on StateFlow values)
 
+    // ====== Cached per-key flows ======
+    // إعادة استخدام نفس الـ StateFlow لكل مفتاح بدل إنشاء تدفق جديد
+    // عند كل إعادة تركيب (recomposition).
+    private val childFoldersFlows = mutableMapOf<Long?, StateFlow<List<FolderEntity>>>()
+    private val filesInFolderFlows = mutableMapOf<Long?, StateFlow<List<FileEntity>>>()
+    private val lecturesByDayFlows = mutableMapOf<String, StateFlow<List<LectureEntity>>>()
+
     // ====== Folder Operations ======
     fun getChildFolders(parentId: Long?): StateFlow<List<FolderEntity>> =
-        repository.getChildFolders(parentId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        childFoldersFlows.getOrPut(parentId) {
+            repository.getChildFolders(parentId)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }
 
     fun insertFolder(folder: FolderEntity) {
         viewModelScope.launch {
@@ -117,7 +126,10 @@ class AppViewModel @Inject constructor(
 
     // ====== File Operations ======
     fun getFilesInFolder(folderId: Long?): StateFlow<List<FileEntity>> =
-        repository.getFilesInFolder(folderId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        filesInFolderFlows.getOrPut(folderId) {
+            repository.getFilesInFolder(folderId)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }
 
     fun insertFile(file: FileEntity) {
         viewModelScope.launch {
@@ -166,7 +178,10 @@ class AppViewModel @Inject constructor(
 
     // ====== Lecture Operations ======
     fun getLecturesByDay(day: String): StateFlow<List<LectureEntity>> =
-        repository.getLecturesByDay(day).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        lecturesByDayFlows.getOrPut(day) {
+            repository.getLecturesByDay(day)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }
 
     fun insertLecture(lecture: LectureEntity) {
         viewModelScope.launch {
@@ -224,6 +239,11 @@ class AppViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.updateTask(task)
+                // إلغاء التذكيرات القديمة وجدولة الجديدة حسب تاريخ الاستحقاق الجديد
+                notificationScheduler.cancelTaskNotifications(task.id)
+                if (!task.dueDate.isNullOrBlank()) {
+                    notificationScheduler.scheduleTaskNotification(task)
+                }
             } catch (e: Exception) {
                 _errorMessage.value = "فشل تحديث المهمة"
                 android.util.Log.e("AppViewModel", "Failed to update task", e)
@@ -309,6 +329,9 @@ class AppViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.updateExam(exam)
+                // إلغاء التذكيرات القديمة وجدولة الأخرى حسب التاريخ/الوقت الجديد
+                notificationScheduler.cancelExamNotifications(exam.id)
+                notificationScheduler.scheduleExamNotification(exam)
             } catch (e: Exception) {
                 _errorMessage.value = "فشل تحديث الامتحان"
                 android.util.Log.e("AppViewModel", "Failed to update exam", e)

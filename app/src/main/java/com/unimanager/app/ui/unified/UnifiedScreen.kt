@@ -29,6 +29,7 @@ import com.unimanager.app.data.entity.NoteEntity
 import com.unimanager.app.data.entity.TaskEntity
 import com.unimanager.app.ui.components.*
 import com.unimanager.app.ui.theme.*
+import com.unimanager.app.util.Validation
 import com.unimanager.app.viewmodel.AppViewModel
 import java.time.LocalDate
 
@@ -42,6 +43,24 @@ fun UnifiedScreen(viewModel: AppViewModel) {
 
     LaunchedEffect(Unit) { screenVisible = true }
 
+    // رسائل الخطأ/النجاح القادمة من الـ ViewModel
+    val snackbarHostState = remember { SnackbarHostState() }
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessages()
+        }
+    }
+    LaunchedEffect(successMessage) {
+        successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessages()
+        }
+    }
+
     val tabs = listOf(
         TabData("المهام", Icons.Filled.CheckCircle, Success),
         TabData("الجدول", Icons.Filled.CalendarToday, Primary),
@@ -50,6 +69,7 @@ fun UnifiedScreen(viewModel: AppViewModel) {
     )
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -60,7 +80,7 @@ fun UnifiedScreen(viewModel: AppViewModel) {
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = MaterialTheme.colorScheme.background
                 ),
                 actions = {
                     if (searchQuery.isNotBlank()) {
@@ -125,12 +145,18 @@ fun UnifiedScreen(viewModel: AppViewModel) {
                 }
             }
 
-            // Tab content
-            when (selectedTab) {
-                0 -> TasksTab(viewModel = viewModel, searchQuery = searchQuery)
-                1 -> ScheduleTab(viewModel = viewModel, searchQuery = searchQuery)
-                2 -> NotesTab(viewModel = viewModel, searchQuery = searchQuery)
-                3 -> ExamsTab(viewModel = viewModel, searchQuery = searchQuery)
+            // Tab content — يجب أن يملأ باقي المساحة المتبقية أسفل التبويبات
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                when (selectedTab) {
+                    0 -> TasksTab(viewModel = viewModel, searchQuery = searchQuery, onAdd = { showAddDialog = true })
+                    1 -> ScheduleTab(viewModel = viewModel, searchQuery = searchQuery, onAdd = { showAddDialog = true })
+                    2 -> NotesTab(viewModel = viewModel, searchQuery = searchQuery, onAdd = { showAddDialog = true })
+                    3 -> ExamsTab(viewModel = viewModel, searchQuery = searchQuery, onAdd = { showAddDialog = true })
+                }
             }
         }
     }
@@ -237,7 +263,7 @@ fun TabButton(
 }
 
 @Composable
-fun TasksTab(viewModel: AppViewModel, searchQuery: String) {
+fun TasksTab(viewModel: AppViewModel, searchQuery: String, onAdd: () -> Unit) {
     val tasks by viewModel.allTasks.collectAsState()
     val filteredTasks = if (searchQuery.isBlank()) tasks
     else tasks.filter { it.title.contains(searchQuery, ignoreCase = true) }
@@ -257,7 +283,7 @@ fun TasksTab(viewModel: AppViewModel, searchQuery: String) {
                 title = "لا توجد مهام",
                 subtitle = "اضغط + لإضافة مهمة",
                 actionText = "إضافة مهمة",
-                onActionClick = { /* TODO */ }
+                onActionClick = onAdd
             )
         }
     } else {
@@ -282,7 +308,7 @@ fun TasksTab(viewModel: AppViewModel, searchQuery: String) {
 }
 
 @Composable
-fun ScheduleTab(viewModel: AppViewModel, searchQuery: String) {
+fun ScheduleTab(viewModel: AppViewModel, searchQuery: String, onAdd: () -> Unit) {
     val lectures by viewModel.allLectures.collectAsState()
     val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة")
 
@@ -294,11 +320,11 @@ fun ScheduleTab(viewModel: AppViewModel, searchQuery: String) {
 
     if (filteredLectures.isEmpty()) {
         EmptyStateEnhanced(
-            icon = "🔍",
+            icon = if (searchQuery.isNotBlank()) "🔍" else "📅",
             title = if (searchQuery.isNotBlank()) "لا توجد نتائج" else "لا توجد محاضرات",
             subtitle = if (searchQuery.isNotBlank()) "جرب كلمات أخرى" else "اضغط + لإضافة محاضرة",
             actionText = if (searchQuery.isBlank()) "إضافة محاضرة" else null,
-            onActionClick = if (searchQuery.isBlank()) { /* TODO */ } else null
+            onActionClick = if (searchQuery.isBlank()) onAdd else null
         )
     } else {
         LazyColumn(
@@ -334,7 +360,7 @@ fun ScheduleTab(viewModel: AppViewModel, searchQuery: String) {
 }
 
 @Composable
-fun NotesTab(viewModel: AppViewModel, searchQuery: String) {
+fun NotesTab(viewModel: AppViewModel, searchQuery: String, onAdd: () -> Unit) {
     val notes by viewModel.allNotes.collectAsState()
     val filteredNotes = if (searchQuery.isBlank()) notes
     else notes.filter {
@@ -348,7 +374,7 @@ fun NotesTab(viewModel: AppViewModel, searchQuery: String) {
             title = if (searchQuery.isNotBlank()) "لا توجد نتائج" else "لا توجد ملاحظات",
             subtitle = if (searchQuery.isNotBlank()) "جرب كلمات أخرى" else "اضغط + لإضافة ملاحظة",
             actionText = if (searchQuery.isBlank()) "إضافة ملاحظة" else null,
-            onActionClick = if (searchQuery.isBlank()) { /* TODO */ } else null
+            onActionClick = if (searchQuery.isBlank()) onAdd else null
         )
     } else {
         LazyColumn(
@@ -371,18 +397,18 @@ fun NotesTab(viewModel: AppViewModel, searchQuery: String) {
 }
 
 @Composable
-fun ExamsTab(viewModel: AppViewModel, searchQuery: String) {
+fun ExamsTab(viewModel: AppViewModel, searchQuery: String, onAdd: () -> Unit) {
     val exams by viewModel.allExams.collectAsState()
     val filteredExams = if (searchQuery.isBlank()) exams
     else exams.filter { it.subject.contains(searchQuery, ignoreCase = true) }
 
     if (filteredExams.isEmpty()) {
         EmptyStateEnhanced(
-            icon = "🔍",
+            icon = if (searchQuery.isNotBlank()) "🔍" else "🎓",
             title = if (searchQuery.isNotBlank()) "لا توجد نتائج" else "لا توجد امتحانات",
             subtitle = if (searchQuery.isNotBlank()) "جرب كلمات أخرى" else "اضغط + لإضافة امتحان",
             actionText = if (searchQuery.isBlank()) "إضافة امتحان" else null,
-            onActionClick = if (searchQuery.isBlank()) { /* TODO */ } else null
+            onActionClick = if (searchQuery.isBlank()) onAdd else null
         )
     } else {
         LazyColumn(
@@ -631,6 +657,7 @@ fun AddTaskDialog(onDismiss: () -> Unit, onAdd: (String, String, String) -> Unit
     var title by remember { mutableStateOf("") }
     var desc by remember { mutableStateOf("") }
     var priority by remember { mutableStateOf("medium") }
+    var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -638,16 +665,46 @@ fun AddTaskDialog(onDismiss: () -> Unit, onAdd: (String, String, String) -> Unit
         title = { Text("مهمة جديدة", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("العنوان") }, shape = RoundedCornerShape(12.dp), singleLine = true)
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it; error = null },
+                    label = { Text("العنوان") },
+                    isError = error != null,
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
                 OutlinedTextField(value = desc, onValueChange = { desc = it }, label = { Text("الوصف") }, shape = RoundedCornerShape(12.dp), maxLines = 3)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("🔴 عالية" to "high", "🟡 متوسطة" to "medium", " منخفضة" to "low").forEach { (label, value) ->
+                    listOf("🔴 عالية" to "high", "🟡 متوسطة" to "medium", "🟢 منخفضة" to "low").forEach { (label, value) ->
                         FilterChip(selected = priority == value, onClick = { priority = value }, label = { Text(label) }, shape = RoundedCornerShape(12.dp))
                     }
                 }
+                error?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
             }
         },
-        confirmButton = { Button(enabled = title.isNotBlank(), onClick = { onAdd(title, desc, priority) }, shape = RoundedCornerShape(12.dp)) { Text("إضافة") } },
+        confirmButton = {
+            Button(
+                enabled = title.isNotBlank(),
+                onClick = {
+                    val nameResult = Validation.validateName(title)
+                    val priorityResult = Validation.validatePriority(priority)
+                    val failure = nameResult.exceptionOrNull()?.message
+                        ?: priorityResult.exceptionOrNull()?.message
+                    if (failure != null) {
+                        error = failure
+                    } else {
+                        onAdd(
+                            Validation.sanitizeInput(title),
+                            Validation.sanitizeText(desc),
+                            priorityResult.getOrThrow()
+                        )
+                    }
+                },
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("إضافة") }
+        },
         dismissButton = { TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") } }
     )
 }
@@ -660,6 +717,7 @@ fun AddLectureDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Stri
     var timeFrom by remember { mutableStateOf("") }
     var timeTo by remember { mutableStateOf("") }
     var room by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
     val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة")
 
     AlertDialog(
@@ -668,19 +726,62 @@ fun AddLectureDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Stri
         title = { Text("محاضرة جديدة", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = subject, onValueChange = { subject = it }, label = { Text("المادة") }, shape = RoundedCornerShape(12.dp), singleLine = true)
+                OutlinedTextField(
+                    value = subject,
+                    onValueChange = { subject = it; error = null },
+                    label = { Text("المادة") },
+                    isError = error != null,
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
                 OutlinedTextField(value = doctor, onValueChange = { doctor = it }, label = { Text("الدكتور") }, shape = RoundedCornerShape(12.dp), singleLine = true)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     days.forEach { d -> FilterChip(selected = day == d, onClick = { day = d }, label = { Text(d.take(3)) }, shape = RoundedCornerShape(12.dp)) }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = timeFrom, onValueChange = { timeFrom = it }, label = { Text("من") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true)
-                    OutlinedTextField(value = timeTo, onValueChange = { timeTo = it }, label = { Text("إلى") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true)
+                    OutlinedTextField(
+                        value = timeFrom,
+                        onValueChange = { timeFrom = it; error = null },
+                        label = { Text("من") },
+                        isError = error != null,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
+                    )
+                    OutlinedTextField(value = timeTo, onValueChange = { timeTo = it; error = null }, label = { Text("إلى (اختياري)") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true)
                 }
                 OutlinedTextField(value = room, onValueChange = { room = it }, label = { Text("القاعة") }, shape = RoundedCornerShape(12.dp), singleLine = true)
+                error?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
             }
         },
-        confirmButton = { Button(enabled = subject.isNotBlank() && timeFrom.isNotBlank(), onClick = { onAdd(subject, doctor, day, timeFrom, timeTo, room) }, shape = RoundedCornerShape(12.dp)) { Text("إضافة") } },
+        confirmButton = {
+            Button(
+                enabled = subject.isNotBlank() && timeFrom.isNotBlank(),
+                onClick = {
+                    val subjectResult = Validation.validateName(subject)
+                    val fromResult = Validation.validateTime(timeFrom)
+                    val toResult = if (timeTo.isBlank()) Result.success(timeTo) else Validation.validateTime(timeTo)
+                    val failure = subjectResult.exceptionOrNull()?.message
+                        ?: fromResult.exceptionOrNull()?.message
+                        ?: toResult.exceptionOrNull()?.message
+                    if (failure != null) {
+                        error = failure
+                    } else {
+                        onAdd(
+                            Validation.sanitizeInput(subject),
+                            Validation.sanitizeText(doctor),
+                            day,
+                            fromResult.getOrThrow(),
+                            toResult.getOrThrow(),
+                            Validation.sanitizeText(room)
+                        )
+                    }
+                },
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("إضافة") }
+        },
         dismissButton = { TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") } }
     )
 }
@@ -689,6 +790,7 @@ fun AddLectureDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Stri
 fun AddNoteDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -696,11 +798,43 @@ fun AddNoteDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
         title = { Text("ملاحظة جديدة", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("العنوان") }, shape = RoundedCornerShape(12.dp), singleLine = true)
-                OutlinedTextField(value = content, onValueChange = { content = it }, label = { Text("المحتوى") }, modifier = Modifier.fillMaxWidth().height(120.dp), shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it; error = null },
+                    label = { Text("العنوان") },
+                    isError = error != null,
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = content,
+                    onValueChange = { content = it; error = null },
+                    label = { Text("المحتوى") },
+                    isError = error != null,
+                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                error?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
             }
         },
-        confirmButton = { Button(enabled = title.isNotBlank(), onClick = { onAdd(title, content) }, shape = RoundedCornerShape(12.dp)) { Text("حفظ") } },
+        confirmButton = {
+            Button(
+                enabled = title.isNotBlank(),
+                onClick = {
+                    val titleResult = Validation.validateName(title)
+                    val failure = titleResult.exceptionOrNull()?.message
+                        ?: if (content.isBlank()) "المحتوى مطلوب" else null
+                    if (failure != null) {
+                        error = failure
+                    } else {
+                        onAdd(Validation.sanitizeInput(title), Validation.sanitizeText(content))
+                    }
+                },
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("حفظ") }
+        },
         dismissButton = { TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") } }
     )
 }
@@ -712,6 +846,7 @@ fun AddExamDialog(onDismiss: () -> Unit, onAdd: (String, String, String, String,
     var date by remember { mutableStateOf("") }
     var time by remember { mutableStateOf("") }
     var room by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -719,25 +854,61 @@ fun AddExamDialog(onDismiss: () -> Unit, onAdd: (String, String, String, String,
         title = { Text("امتحان جديد", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = subject, onValueChange = { subject = it }, label = { Text("المادة") }, shape = RoundedCornerShape(12.dp), singleLine = true)
+                OutlinedTextField(
+                    value = subject,
+                    onValueChange = { subject = it; error = null },
+                    label = { Text("المادة") },
+                    isError = error != null,
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("نصفي", "نهائي", "فجائي", "عملي").forEach { t -> FilterChip(selected = type == t, onClick = { type = t }, label = { Text(t) }, shape = RoundedCornerShape(12.dp)) }
                 }
                 // DatePicker و TimePicker
                 com.unimanager.app.ui.components.DatePickerField(
                     value = date,
-                    onValueChange = { date = it },
+                    onValueChange = { date = it; error = null },
                     label = "تاريخ الامتحان"
                 )
                 com.unimanager.app.ui.components.TimePickerField(
                     value = time,
-                    onValueChange = { time = it },
-                    label = "وقت الامتحان"
+                    onValueChange = { time = it; error = null },
+                    label = "وقت الامتحان (اختياري)"
                 )
                 OutlinedTextField(value = room, onValueChange = { room = it }, label = { Text("القاعة") }, shape = RoundedCornerShape(12.dp), singleLine = true)
+                error?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
             }
         },
-        confirmButton = { Button(enabled = subject.isNotBlank() && date.isNotBlank(), onClick = { onAdd(subject, type, date, time, room) }, shape = RoundedCornerShape(12.dp)) { Text("إضافة") } },
+        confirmButton = {
+            Button(
+                enabled = subject.isNotBlank() && date.isNotBlank(),
+                onClick = {
+                    val subjectResult = Validation.validateName(subject)
+                    val dateResult = Validation.validateDate(date)
+                    val timeResult = if (time.isBlank()) Result.success(time) else Validation.validateTime(time)
+                    val typeResult = Validation.validateExamType(type)
+                    val failure = subjectResult.exceptionOrNull()?.message
+                        ?: dateResult.exceptionOrNull()?.message
+                        ?: timeResult.exceptionOrNull()?.message
+                        ?: typeResult.exceptionOrNull()?.message
+                    if (failure != null) {
+                        error = failure
+                    } else {
+                        onAdd(
+                            Validation.sanitizeInput(subject),
+                            typeResult.getOrThrow(),
+                            dateResult.getOrThrow(),
+                            timeResult.getOrThrow(),
+                            Validation.sanitizeText(room)
+                        )
+                    }
+                },
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("إضافة") }
+        },
         dismissButton = { TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") } }
     )
 }
