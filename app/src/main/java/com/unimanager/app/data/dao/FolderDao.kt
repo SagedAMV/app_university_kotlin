@@ -15,7 +15,11 @@ interface FolderDao {
     @Query("SELECT * FROM folders WHERE parentId IS NULL ORDER BY createdAt DESC")
     fun getRootFolders(): Flow<List<FolderEntity>>
 
-    @Query("SELECT * FROM folders WHERE parentId = :parentId ORDER BY name")
+    // ملاحظة إصلاح (التدقيق الرابع): "parentId = :parentId" في SQLite لا يطابق أبداً عندما
+    // يكون المعامل NULL (دلالات NULL القياسية)، فيعيد دائماً قائمة فارغة لجذر المجلدات لو استُدعيت
+    // بمعامل فارغ. الشاشة الحالية تتجنب ذلك بفرع منفصل لجذر المجلدات (getRootFolders)، لكن الاستعلام
+    // نفسه بقي غير صحيح منطقياً وقد يُستخدم لاحقاً بافتراض تطابق NULL؛ صُحح ليطابق NULL بشكل صريح.
+    @Query("SELECT * FROM folders WHERE (:parentId IS NULL AND parentId IS NULL) OR parentId = :parentId ORDER BY name")
     fun getChildFolders(parentId: Long?): Flow<List<FolderEntity>>
 
     @Insert

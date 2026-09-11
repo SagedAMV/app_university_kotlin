@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
     <!-- Exclude sensitive data from auto backup -->
-    <exclude domain="database" path="uni_manager_db"/>
+    <exclude domain="database" path="uni_manager_db_v2"/>
     <exclude domain="sharedpref" path="sensitive_prefs.xml"/>
 </full-backup-content>

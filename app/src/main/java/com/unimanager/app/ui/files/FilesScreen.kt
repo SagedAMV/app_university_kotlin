@@ -16,6 +16,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -147,7 +149,7 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
                 navigationIcon = {
                     if (currentFolderId != null) {
                         IconButton(onClick = { currentFolderId = null }) {
-                            Icon(Icons.Filled.ArrowBack, contentDescription = "رجوع")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
                         }
                     }
                 },
@@ -615,7 +617,7 @@ fun FolderItem(
             }
 
             Icon(
-                Icons.Filled.ChevronLeft,
+                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = "فتح",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)

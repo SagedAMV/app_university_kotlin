@@ -12,7 +12,8 @@ interface FileDao {
     @Query("SELECT * FROM files ORDER BY createdAt DESC")
     suspend fun getAllFilesSync(): List<FileEntity>
 
-    @Query("SELECT * FROM files WHERE folderId = :folderId ORDER BY name")
+    // نفس إصلاح NULL في FolderDao.getChildFolders أعلاه، مطبّق هنا على ملفات المجلد الجذري.
+    @Query("SELECT * FROM files WHERE (:folderId IS NULL AND folderId IS NULL) OR folderId = :folderId ORDER BY name")
     fun getFilesInFolder(folderId: Long?): Flow<List<FileEntity>>
 
     @Query("SELECT * FROM files WHERE isFavorite = 1 ORDER BY createdAt DESC")

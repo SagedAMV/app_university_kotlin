@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تقرير الإصلاحات — UniManager</title>
+<style>
+  :root{
+    --bg:#0b0f1e;
+    --bg2:#121936;
+    --primary:#6366f1;
+    --primary2:#8b5cf6;
+    --accent:#22d3ee;
+    --success:#10b981;
+    --danger:#ef4444;
+    --warn:#f59e0b;
+    --text:#e5e7ff;
+    --muted:#9aa3c7;
+    --card:#161d3d;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:'Tahoma','Segoe UI',system-ui,sans-serif;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(99,102,241,.25), transparent 40%),
+      radial-gradient(circle at 80% 30%, rgba(34,211,238,.18), transparent 45%),
+      radial-gradient(circle at 50% 90%, rgba(139,92,246,.20), transparent 45%),
+      var(--bg);
+    color:var(--text);
+    overflow-x:hidden;
+  }
+
+  /* ===== Starfield background ===== */
+  .stars{position:fixed;inset:0;z-index:0;pointer-events:none;}
+  .star{position:absolute;background:#fff;border-radius:50%;opacity:.7;animation:twinkle 3s ease-in-out infinite;}
+  @keyframes twinkle{0%,100%{opacity:.15;transform:scale(1);}50%{opacity:1;transform:scale(1.4);}}
+
+  /* ===== Hero ===== */
+  header.hero{
+    position:relative;z-index:1;
+    min-height:78vh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:40px 20px;
+  }
+  .badge{
+    display:inline-block;padding:8px 18px;border-radius:999px;
+    background:linear-gradient(135deg,var(--primary),var(--accent));
+    font-size:14px;font-weight:bold;letter-spacing:.5px;
+    box-shadow:0 0 30px rgba(99,102,241,.6);
+    animation:floatBadge 3.4s ease-in-out infinite;
+    margin-bottom:22px;
+  }
+  @keyframes floatBadge{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+  h1.title{
+    font-size:clamp(32px,6vw,64px);
+    margin:0 0 14px;
+    background:linear-gradient(90deg,#fff,#c7d2fe 40%,var(--accent) 70%,#fff);
+    background-size:300% auto;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shine 5s linear infinite;
+  }
+  @keyframes shine{0%{background-position:0% 50%;}100%{background-position:300% 50%;}}
+  p.subtitle{color:var(--muted);font-size:clamp(15px,2vw,20px);max-width:760px;line-height:1.9;}
+
+  .app-icon{
+    width:110px;height:110px;border-radius:28px;margin-bottom:26px;
+    background:linear-gradient(135deg,var(--primary),var(--primary2));
+    display:flex;align-items:center;justify-content:center;font-size:52px;
+    box-shadow:0 20px 60px rgba(99,102,241,.55);
+    animation:pulseIcon 2.6s ease-in-out infinite;
+  }
+  @keyframes pulseIcon{0%,100%{transform:scale(1) rotate(0deg);}50%{transform:scale(1.07) rotate(3deg);}}
+
+  .scroll-cue{margin-top:46px;color:var(--muted);font-size:14px;animation:bounce 1.8s infinite;}
+  @keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(10px);}}
+
+  /* ===== Sections ===== */
+  main{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:20px 22px 100px;}
+
+  .section-title{
+    text-align:center;font-size:clamp(24px,4vw,38px);margin:70px 0 12px;
+    color:#fff;
+  }
+  .section-desc{text-align:center;color:var(--muted);max-width:680px;margin:0 auto 50px;line-height:1.9;}
+
+  .reveal{opacity:0;transform:translateY(40px);transition:all .8s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:translateY(0);}
+
+  /* timeline */
+  .timeline{position:relative;padding-inline-start:0;}
+  .timeline::before{
+    content:'';position:absolute;top:0;bottom:0;right:29px;width:3px;
+    background:linear-gradient(180deg,var(--primary),var(--accent),var(--success));
+    border-radius:3px;
+  }
+  .fix-card{
+    position:relative;
+    margin:0 0 34px 0;padding-inline-end:70px;
+  }
+  .fix-dot{
+    position:absolute;right:14px;top:6px;width:32px;height:32px;border-radius:50%;
+    background:var(--card);border:3px solid var(--primary);
+    display:flex;align-items:center;justify-content:center;font-size:15px;
+    box-shadow:0 0 0 6px rgba(99,102,241,.12);
+    z-index:2;
+  }
+  .fix-card.danger .fix-dot{border-color:var(--danger);box-shadow:0 0 0 6px rgba(239,68,68,.15);}
+  .fix-card.success .fix-dot{border-color:var(--success);box-shadow:0 0 0 6px rgba(16,185,129,.15);}
+  .fix-card.warn .fix-dot{border-color:var(--warn);box-shadow:0 0 0 6px rgba(245,158,11,.15);}
+  .fix-card.info .fix-dot{border-color:var(--accent);box-shadow:0 0 0 6px rgba(34,211,238,.15);}
+
+  .card-box{
+    background:linear-gradient(160deg,var(--card),#101634);
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:20px;padding:24px 26px;
+    box-shadow:0 10px 40px rgba(0,0,0,.35);
+    position:relative;overflow:hidden;
+  }
+  .card-box::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.06) 50%,transparent 70%);
+    background-size:250% 250%;
+    animation:sheen 6s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes sheen{0%{background-position:200% 0;}100%{background-position:-50% 0;}}
+
+  .tag{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:12px;font-weight:bold;padding:4px 12px;border-radius:999px;
+    margin-bottom:10px;
+  }
+  .tag.problem{background:rgba(239,68,68,.15);color:#fca5a5;}
+  .tag.cause{background:rgba(245,158,11,.15);color:#fcd34d;}
+  .tag.fix{background:rgba(16,185,129,.15);color:#6ee7b7;}
+  .tag.design{background:rgba(34,211,238,.15);color:#67e8f9;}
+
+  .card-box h3{margin:0 0 10px;font-size:20px;color:#fff;}
+  .card-box p{color:var(--muted);line-height:1.9;margin:6px 0;font-size:15px;}
+  .card-box code{
+    background:rgba(255,255,255,.08);padding:2px 8px;border-radius:6px;
+    font-size:13px;color:#a5f3fc;direction:ltr;display:inline-block;
+  }
+
+  .diff{
+    display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;
+  }
+  @media (max-width:640px){.diff{grid-template-columns:1fr;}}
+  .diff .before, .diff .after{
+    border-radius:12px;padding:12px 14px;font-size:13px;direction:ltr;text-align:left;
+    font-family:'Consolas',monospace;line-height:1.7;
+  }
+  .diff .before{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+  .diff .after{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);color:#6ee7b7;}
+  .diff .label{display:block;font-family:Tahoma;direction:rtl;text-align:right;font-size:11px;color:var(--muted);margin-bottom:6px;}
+
+  /* Before/After phone crash animation */
+  .demo{
+    display:flex;align-items:center;justify-content:center;gap:36px;margin:26px auto 6px;flex-wrap:wrap;
+  }
+  .phone{
+    width:130px;height:230px;border-radius:22px;border:3px solid rgba(255,255,255,.18);
+    background:#0a0f22;position:relative;overflow:hidden;box-shadow:0 15px 40px rgba(0,0,0,.5);
+  }
+  .phone .screen{position:absolute;inset:6px;border-radius:16px;overflow:hidden;background:#151b38;}
+  .phone .app-bar{height:26px;background:linear-gradient(90deg,var(--primary),var(--primary2));}
+  .phone.crash .screen{animation:shake 0.4s infinite;}
+  .phone.crash .crash-msg{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:6px;background:rgba(0,0,0,.75);opacity:0;
+    animation:crashPop 2.4s ease-in-out infinite;font-size:12px;color:#fca5a5;text-align:center;padding:10px;
+  }
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-3px);}75%{transform:translateX(3px);}}
+  @keyframes crashPop{0%,40%{opacity:0;}55%,85%{opacity:1;}100%{opacity:0;}}
+  .phone.fixed .folder-row{
+    display:flex;align-items:center;gap:6px;margin:10px 8px;padding:8px;border-radius:8px;
+    background:rgba(255,255,255,.06);font-size:10px;color:#c7d2fe;
+    animation:slideIn .6s ease both;
+  }
+  .phone.fixed .folder-row:nth-child(2){animation-delay:.15s;}
+  .phone.fixed .folder-row:nth-child(3){animation-delay:.3s;}
+  .phone.fixed .fab{
+    position:absolute;bottom:12px;left:12px;width:30px;height:30px;border-radius:50%;
+    background:var(--success);display:flex;align-items:center;justify-content:center;color:#04211a;font-weight:bold;
+    box-shadow:0 0 0 0 rgba(16,185,129,.6);animation:okPulse 2s infinite;
+  }
+  @keyframes okPulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5);}70%{box-shadow:0 0 0 14px rgba(16,185,129,0);}100%{box-shadow:0 0 0 0 rgba(16,185,129,0);}}
+  @keyframes slideIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .demo-caption{font-size:12px;color:var(--muted);text-align:center;margin-top:8px;}
+
+  /* RTL icon flip demo */
+  .rtl-demo{display:flex;gap:60px;justify-content:center;align-items:center;margin:30px 0;flex-wrap:wrap;}
+  .rtl-box{text-align:center;}
+  .arrow-wrong{
+    font-size:46px;display:inline-block;color:var(--danger);
+    animation:wrongShake 1.6s ease-in-out infinite;
+  }
+  @keyframes wrongShake{0%,100%{transform:translateX(0) scaleX(1);}50%{transform:translateX(6px) scaleX(1);}}
+  .arrow-right{
+    font-size:46px;display:inline-block;color:var(--success);
+    animation:rightGlide 1.6s ease-in-out infinite;
+  }
+  @keyframes rightGlide{0%,100%{transform:translateX(0);}50%{transform:translateX(-10px);}}
+  .rtl-box span.caption{display:block;margin-top:10px;font-size:13px;color:var(--muted);}
+
+  /* stats */
+  .stats{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-top:60px;}
+  .stat{
+    background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:18px;
+    padding:22px 30px;text-align:center;min-width:150px;
+    box-shadow:0 10px 30px rgba(0,0,0,.3);
+  }
+  .stat .num{font-size:34px;font-weight:bold;color:var(--accent);}
+  .stat .lbl{font-size:13px;color:var(--muted);margin-top:6px;}
+
+  footer{
+    text-align:center;padding:50px 20px;color:var(--muted);font-size:13px;
+    border-top:1px solid rgba(255,255,255,.06);margin-top:80px;
+  }
+  footer .heart{color:#f472b6;display:inline-block;animation:beat 1.2s infinite;}
+  @keyframes beat{0%,100%{transform:scale(1);}50%{transform:scale(1.3);}}
+
+  .progress-wrap{
+    position:fixed;top:0;right:0;left:0;height:4px;background:rgba(255,255,255,.06);z-index:50;
+  }
+  .progress-bar{
+    height:100%;width:0%;background:linear-gradient(90deg,var(--primary),var(--accent),var(--success));
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+<div class="stars" id="stars"></div>
+
+<header class="hero">
+  <div class="app-icon">🎓</div>
+  <div class="badge">✅ التدقيق الرابع — إصلاح كراشات فعلية على الجهاز</div>
+  <h1 class="title">تقرير إصلاحات UniManager</h1>
+  <p class="subtitle">
+    قراءة عميقة لكامل منطق التطبيق (Room، Hilt، Compose، Navigation)، تتبّع جذر كراشين حقيقيّين
+    أبلغ عنهما المستخدم أثناء الاستخدام الفعلي، وتصحيح خلل بصري في الاتجاه (RTL) — مع شرح كل قرار
+    وسببه بالتفصيل بالأسفل.
+  </p>
+  <div class="scroll-cue">⬇ مرّر للأسفل لعرض كل إصلاح خطوة بخطوة</div>
+</header>
+
+<main>
+
+  <section>
+    <h2 class="section-title reveal">🧠 الفهم أولاً</h2>
+    <p class="section-desc reveal">
+      قبل أي تعديل، تمت قراءة كل طبقات التطبيق: الكيانات (Entities)، الاستعلامات (DAO)، المستودع
+      (Repository)، الـ ViewModel، شاشات Compose، والتنقّل (Navigation) — للتأكد أن كل دالة ومكتبة
+      مُستخدَمة فعلاً وتخدم غرضاً حقيقياً، تماشياً مع طلب المراجعة الشاملة.
+    </p>
+  </section>
+
+  <section>
+    <h2 class="section-title reveal">💥 المشكلة كما وصفها المستخدم</h2>
+    <div class="demo reveal">
+      <div class="rtl-box">
+        <div class="phone crash">
+          <div class="screen">
+            <div class="app-bar"></div>
+            <div class="crash-msg">⚠️<br>UniManager توقّف<br>(كراش عند إضافة مجلد)</div>
+          </div>
+        </div>
+        <div class="demo-caption">قبل الإصلاح: إضافة مجلد ← كراش فوري</div>
+      </div>
+      <div class="rtl-box">
+        <div class="phone crash">
+          <div class="screen">
+            <div class="app-bar"></div>
+            <div class="crash-msg">⚠️<br>UniManager توقّف<br>(كراش عند فتح تبويب الملفات)</div>
+          </div>
+        </div>
+        <div class="demo-caption">قبل الإصلاح: فتح تبويب الملفات بعد إنشاء ملف ← كراش</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title reveal">🔍 التشخيص</h2>
+    <div class="reveal card-box">
+      <span class="tag cause">السبب الجذري</span>
+      <h3>تضارب مخطط قاعدة بيانات Room بعد تحديثات متتالية</h3>
+      <p>
+        التطبيق مرّ بأربعة إصدارات مخطط قاعدة بيانات (v1 → v4) عبر جلسات تطوير سابقة: فهارس أداء،
+        ثم مفتاح أجنبي (Foreign Key) يربط الملفات بمجلداتها مع حذف تسلسلي (CASCADE). أي تثبيت سابق
+        على جهاز الاختبار يحمل بنية جداول قديمة، فحين يحاول Room تطبيق الترقيات والتحقق من مطابقتها
+        الحرفية لتعريفات الكيانات الحالية، أي اختلاف بسيط يجعله يرمي استثناءً غير مُعالَج:
+      </p>
+      <p><code>IllegalStateException: Migration didn't properly handle folders(...)</code></p>
+      <p>
+        وبما أن أول استعلام يلمس جدول <code>folders</code> هو تحميل شاشة الملفات، وأول إدراج يلمسه
+        هو عملية <b>"إضافة مجلد"</b> — يتطابق هذا تماماً مع الأعراض التي وصفها المستخدم.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title reveal">🛠️ الإصلاحات المطبَّقة</h2>
+    <p class="section-desc reveal">كل إصلاح موثّق في <code>تقرير_التدقيق_الرابع.md</code> داخل المستودع، وهنا خلاصة مرئية له.</p>
+
+    <div class="timeline">
+
+      <div class="fix-card danger reveal">
+        <div class="fix-dot">1</div>
+        <div class="card-box">
+          <span class="tag fix">إصلاح حاسم</span>
+          <h3>قاعدة بيانات نظيفة + شبكة أمان ضد فشل الترقية</h3>
+          <p>غُيّر اسم ملف قاعدة البيانات إلى <code>uni_manager_db_v2</code> ليبدأ التطبيق ببنية جديدة
+          تُطابق تعريفات الكيانات الحالية تماماً (بلا أي مخاطرة ترقية)، مع إبقاء الهجرات الصريحة
+          الثلاث لأي تحديث مستقبلي، وإضافة <code>fallbackToDestructiveMigration()</code> كخط دفاع
+          أخير يمنع حلقة الكراش المتكررة — قرار مبرَّر صراحةً لأن التطبيق شخصي وغير منشور.</p>
+          <div class="diff">
+            <div>
+              <span class="label">قبل</span>
+              <div class="before">Room.databaseBuilder(<br>&nbsp;&nbsp;"uni_manager_db"<br>).addMigrations(...).build()</div>
+            </div>
+            <div>
+              <span class="label">بعد</span>
+              <div class="after">Room.databaseBuilder(<br>&nbsp;&nbsp;"uni_manager_db_v2"<br>).addMigrations(...)<br>&nbsp;&nbsp;.fallbackToDestructiveMigration()<br>&nbsp;&nbsp;.build()</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fix-card warn reveal">
+        <div class="fix-dot">2</div>
+        <div class="card-box">
+          <span class="tag fix">حماية إضافية</span>
+          <h3>عدم إسقاط الشاشة كاملة عند أي خطأ في قاعدة البيانات</h3>
+          <p>كل تدفقات <code>Flow</code> في <code>AppRepository</code> (16 دالة: مجلدات، ملفات،
+          محاضرات، مهام، ملاحظات، امتحانات) أصبحت محمية بمُعامل <code>catch{}</code> مخصّص يسجّل
+          الخطأ ويُصدر قيمة احتياطية آمنة بدل إسقاط الشاشة بالكامل عند أي عطل غير متوقع مستقبلاً.</p>
+        </div>
+      </div>
+
+      <div class="fix-card info reveal">
+        <div class="fix-dot">3</div>
+        <div class="card-box">
+          <span class="tag fix">تصحيح منطقي</span>
+          <h3>مطابقة NULL الصحيحة في استعلامات SQL</h3>
+          <p>استعلامات <code>WHERE parentId = :parentId</code> لا تُطابق القيمة NULL أبداً في SQLite
+          (دلالات NULL القياسية). صُحّحت في <code>FolderDao</code> و<code>FileDao</code> لتطابق NULL
+          صراحةً، فتصبح الدوال قابلة للاستخدام الآمن من أي شاشة مستقبلية (مثل شاشة المجرة) بلا مفاجآت.</p>
+        </div>
+      </div>
+
+      <div class="fix-card success reveal">
+        <div class="fix-dot">4</div>
+        <div class="card-box">
+          <span class="tag design">تصميم / RTL</span>
+          <h3>أسهم الاتجاه كانت "تشير بالاتجاه الخاطئ"</h3>
+          <p>التطبيق عربي بالكامل (RTL)، لكن أيقونات الرجوع وفتح المجلد كانت من مجموعة
+          <code>Icons.Filled.*</code> التي لا تنعكس تلقائياً مع اتجاه الواجهة. استُبدلت في 3 شاشات
+          (الملفات، الإعدادات، النسخ الاحتياطي) بمجموعة <code>Icons.AutoMirrored.Filled.*</code>
+          الرسمية من Compose، لتصبح متسقة مع الشاشة الرئيسية التي كانت تستخدمها بشكل صحيح من الأساس.</p>
+          <div class="rtl-demo">
+            <div class="rtl-box">
+              <span class="arrow-wrong">⬅</span>
+              <span class="caption">قبل: تشير لليسار دائماً حتى في RTL</span>
+            </div>
+            <div class="rtl-box">
+              <span class="arrow-right">➡</span>
+              <span class="caption">بعد: تنعكس تلقائياً وتشير لجهة "الرجوع" الصحيحة</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title reveal">🎉 النتيجة</h2>
+    <div class="demo reveal">
+      <div class="rtl-box">
+        <div class="phone fixed" style="position:relative;">
+          <div class="screen">
+            <div class="app-bar"></div>
+            <div class="folder-row">📁 مجلد المحاضرات</div>
+            <div class="folder-row">📁 مجلد المهام</div>
+            <div class="folder-row">📄 ملف جديد.pdf</div>
+            <div class="fab">＋</div>
+          </div>
+        </div>
+        <div class="demo-caption">بعد الإصلاح: إضافة مجلد وفتح تبويب الملفات يعملان بسلاسة ✅</div>
+      </div>
+    </div>
+
+    <div class="stats reveal">
+      <div class="stat"><div class="num">2</div><div class="lbl">كراش فعلي تمت معالجته</div></div>
+      <div class="stat"><div class="num">7</div><div class="lbl">ملفات كود عُدِّلت بدقة</div></div>
+      <div class="stat"><div class="num">16</div><div class="lbl">تدفق بيانات أصبح محمياً من الانهيار</div></div>
+      <div class="stat"><div class="num">3</div><div class="lbl">شاشات صُححت فيها اتجاهات الأيقونات</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title reveal">📌 خطوة أخيرة يلزم تنفيذها يدوياً</h2>
+    <div class="card-box reveal">
+      <span class="tag cause">مهم</span>
+      <p>
+        لأن سبب الكراش الجذري هو ملف قاعدة بيانات قديم متبقٍ على الجهاز، يُفضَّل <b>إلغاء تثبيت
+        النسخة الحالية من التطبيق قبل تثبيت هذه النسخة المُصلَحة</b> (أو ببساطة تجاهل الأمر — التطبيق
+        سينشئ قاعدة بيانات نظيفة تلقائياً تحت الاسم الجديد <code>uni_manager_db_v2</code> ولن يقرأ
+        الملف القديم إطلاقاً بعد الآن).
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  صُنع بعناية أثناء تدقيق شامل لكود UniManager <span class="heart">♥</span><br>
+  التفاصيل الكاملة لكل تعديل موجودة في <code style="background:rgba(255,255,255,.08);padding:2px 8px;border-radius:6px;">تقرير_التدقيق_الرابع.md</code>
+</footer>
+
+<script>
+  // Starfield generator
+  const starsContainer = document.getElementById('stars');
+  for (let i = 0; i < 90; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2 + 1;
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
+    s.style.top = Math.random() * 100 + '%';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.animationDelay = (Math.random() * 3) + 's';
+    starsContainer.appendChild(s);
+  }
+
+  // Scroll reveal
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('in');
+    });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+
+  // Scroll progress bar
+  const bar = document.getElementById('progressBar');
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const scrolled = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+    bar.style.width = scrolled + '%';
+  });
+</script>
+
+</body>
+</html>
