@@ -9,6 +9,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks ORDER BY CASE WHEN isDone = 1 THEN 1 ELSE 0 END, CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END, dueDate ASC")
     fun getAllTasks(): Flow<List<TaskEntity>>
 
+    @Query("SELECT * FROM tasks ORDER BY createdAt DESC")
+    suspend fun getAllTasksSync(): List<TaskEntity>
+
     @Query("SELECT * FROM tasks WHERE isDone = 0 ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END, dueDate ASC")
     fun getPendingTasks(): Flow<List<TaskEntity>>
 
@@ -17,6 +20,9 @@ interface TaskDao {
 
     @Insert
     suspend fun insert(task: TaskEntity): Long
+
+    @Insert
+    suspend fun insertSync(task: TaskEntity): Long
 
     @Update
     suspend fun update(task: TaskEntity)

@@ -9,6 +9,9 @@ interface FolderDao {
     @Query("SELECT * FROM folders ORDER BY createdAt DESC")
     fun getAllFolders(): Flow<List<FolderEntity>>
 
+    @Query("SELECT * FROM folders ORDER BY createdAt DESC")
+    suspend fun getAllFoldersSync(): List<FolderEntity>
+
     @Query("SELECT * FROM folders WHERE parentId IS NULL ORDER BY createdAt DESC")
     fun getRootFolders(): Flow<List<FolderEntity>>
 
@@ -20,6 +23,9 @@ interface FolderDao {
 
     @Insert
     suspend fun insert(folder: FolderEntity): Long
+
+    @Insert
+    suspend fun insertSync(folder: FolderEntity): Long
 
     @Update
     suspend fun update(folder: FolderEntity)

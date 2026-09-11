@@ -9,6 +9,9 @@ interface FileDao {
     @Query("SELECT * FROM files ORDER BY createdAt DESC")
     fun getAllFiles(): Flow<List<FileEntity>>
 
+    @Query("SELECT * FROM files ORDER BY createdAt DESC")
+    suspend fun getAllFilesSync(): List<FileEntity>
+
     @Query("SELECT * FROM files WHERE folderId = :folderId ORDER BY name")
     fun getFilesInFolder(folderId: Long?): Flow<List<FileEntity>>
 
@@ -23,6 +26,9 @@ interface FileDao {
 
     @Insert
     suspend fun insert(file: FileEntity): Long
+
+    @Insert
+    suspend fun insertSync(file: FileEntity): Long
 
     @Update
     suspend fun update(file: FileEntity)

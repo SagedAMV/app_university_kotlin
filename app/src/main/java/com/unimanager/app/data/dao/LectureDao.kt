@@ -9,6 +9,9 @@ interface LectureDao {
     @Query("SELECT * FROM lectures ORDER BY day, timeFrom")
     fun getAllLectures(): Flow<List<LectureEntity>>
 
+    @Query("SELECT * FROM lectures ORDER BY day, timeFrom")
+    suspend fun getAllLecturesSync(): List<LectureEntity>
+
     @Query("SELECT * FROM lectures WHERE day = :day ORDER BY timeFrom")
     fun getLecturesByDay(day: String): Flow<List<LectureEntity>>
 
@@ -17,6 +20,9 @@ interface LectureDao {
 
     @Insert
     suspend fun insert(lecture: LectureEntity): Long
+
+    @Insert
+    suspend fun insertSync(lecture: LectureEntity): Long
 
     @Update
     suspend fun update(lecture: LectureEntity)

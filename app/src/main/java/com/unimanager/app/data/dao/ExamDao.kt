@@ -9,6 +9,9 @@ interface ExamDao {
     @Query("SELECT * FROM exams ORDER BY examDate ASC")
     fun getAllExams(): Flow<List<ExamEntity>>
 
+    @Query("SELECT * FROM exams ORDER BY examDate ASC")
+    suspend fun getAllExamsSync(): List<ExamEntity>
+
     @Query("SELECT * FROM exams WHERE examDate >= date('now') ORDER BY examDate ASC")
     fun getUpcomingExams(): Flow<List<ExamEntity>>
 
@@ -17,6 +20,9 @@ interface ExamDao {
 
     @Insert
     suspend fun insert(exam: ExamEntity): Long
+
+    @Insert
+    suspend fun insertSync(exam: ExamEntity): Long
 
     @Update
     suspend fun update(exam: ExamEntity)
