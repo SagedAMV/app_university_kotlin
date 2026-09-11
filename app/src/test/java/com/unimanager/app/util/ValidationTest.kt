@@ -96,12 +96,21 @@ class ValidationTest {
         assertTrue(result.isSuccess)
     }
 
+    // سبب الإصلاح: كان اسم هذا الاختبار "with disallowed extension returns failure" بينما
+    // يستخدم فعليًا الامتداد "exe" الموجود أصلاً ضمن ALLOWED_EXTENSIONS، فيتحقق من isSuccess
+    // لا isFailure — أي أن الاسم يناقض السلوك المُختبَر فعليًا، وهو اختبار مضلِّل لا يغطي مسار
+    // الفشل الحقيقي إطلاقًا رغم أن اسمه يوحي بذلك. الإصلاح: تقسيمه إلى اختبارين صحيحين كل
+    // منهما يطابق اسمه فعلًا (أحدهما يغطي امتدادًا مسموحًا، والآخر يغطي امتدادًا مرفوضًا فعلًا).
+    @Test
+    fun `validateExtension with allowed extension exe returns success`() {
+        val result = Validation.validateExtension("exe")
+        assertTrue(result.isSuccess)
+    }
+
     @Test
     fun `validateExtension with disallowed extension returns failure`() {
-        val result = Validation.validateExtension("exe")
-        // exe is in allowed list, but let's test truly unknown
-        // Actually let's test a real invalid one
-        assertTrue(result.isSuccess) // exe is allowed
+        val result = Validation.validateExtension("xyz")
+        assertTrue(result.isFailure)
     }
 
     @Test

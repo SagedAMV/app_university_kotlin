@@ -44,20 +44,31 @@ fun DatePickerField(
         }
     )
 
-    if (showDialog) {
-        val calendar = Calendar.getInstance()
-        val datePickerDialog = DatePickerDialog(
-            LocalContext.current,
-            { _, year, month, dayOfMonth ->
-                val date = LocalDate.of(year, month + 1, dayOfMonth)
-                onValueChange(date.format(DateTimeFormatter.ISO_LOCAL_DATE))
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        )
-        datePickerDialog.show()
-        showDialog = false
+    // سبب الإصلاح: كان استدعاء DatePickerDialog(...).show() ثم "showDialog = false" يحدث
+    // مباشرة داخل جسم الدالة القابلة للتركيب (Composable) وليس داخل أثر جانبي (Side Effect).
+    // هذا مخالف لعقد Compose الذي يفترض أن تكون الدوال القابلة للتركيب خالية من الآثار
+    // الجانبية وقابلة لإعادة الاستدعاء عدة مرات لكل إطار (Recomposition)؛ فأي إعادة تركيب
+    // إضافية لسبب آخر بينما showDialog = true كانت قد تُعيد إنشاء وإظهار حوار Android نظامي
+    // إضافي فوق نفسه. استخدام LaunchedEffect(showDialog) يضمن أن الحوار يُبنى ويُعرض مرة
+    // واحدة فقط عند تحوّل showDialog إلى true، وأن إعادة ضبطه تحدث كأثر جانبي منضبط لا كتأثير
+    // مباشر أثناء التركيب.
+    val context = LocalContext.current
+    LaunchedEffect(showDialog) {
+        if (showDialog) {
+            val calendar = Calendar.getInstance()
+            DatePickerDialog(
+                context,
+                { _, year, month, dayOfMonth ->
+                    val date = LocalDate.of(year, month + 1, dayOfMonth)
+                    onValueChange(date.format(DateTimeFormatter.ISO_LOCAL_DATE))
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+            ).apply {
+                setOnDismissListener { showDialog = false }
+            }.show()
+        }
     }
 }
 
@@ -88,18 +99,23 @@ fun TimePickerField(
         }
     )
 
-    if (showDialog) {
-        val calendar = Calendar.getInstance()
-        val timePickerDialog = TimePickerDialog(
-            LocalContext.current,
-            { _, hourOfDay, minute ->
-                onValueChange(String.format("%02d:%02d", hourOfDay, minute))
-            },
-            calendar.get(Calendar.HOUR_OF_DAY),
-            calendar.get(Calendar.MINUTE),
-            true // 24h format
-        )
-        timePickerDialog.show()
-        showDialog = false
+    // نفس إصلاح DatePickerField أعلاه: إظهار الحوار داخل LaunchedEffect بدل جسم composable
+    // مباشرة، مع إعادة ضبط showDialog عبر مستمع الإغلاق الفعلي للحوار.
+    val context = LocalContext.current
+    LaunchedEffect(showDialog) {
+        if (showDialog) {
+            val calendar = Calendar.getInstance()
+            TimePickerDialog(
+                context,
+                { _, hourOfDay, minute ->
+                    onValueChange(String.format("%02d:%02d", hourOfDay, minute))
+                },
+                calendar.get(Calendar.HOUR_OF_DAY),
+                calendar.get(Calendar.MINUTE),
+                true // 24h format
+            ).apply {
+                setOnDismissListener { showDialog = false }
+            }.show()
+        }
     }
 }

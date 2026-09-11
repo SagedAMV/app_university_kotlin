@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.room.withTransaction
 import com.unimanager.app.data.AppDatabase
+import com.unimanager.app.util.ExamNotificationScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -13,10 +14,20 @@ import java.io.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * سبب الإصلاح: كانت [importBackup] تحذف كل المهام/الامتحانات وتستوردها من جديد داخل قاعدة
+ * البيانات فقط، دون لمس تذكيرات WorkManager المجدولة سلفًا عبر [ExamNotificationScheduler].
+ * النتيجة: (1) أي تذكير قديم مجدول لعنصر أُزيل الآن يبقى حيًّا وقد يُطلق إشعارًا عن بيانات
+ * لم تعد موجودة (تسرّب إشعارات وهمية)، و(2) المهام/الامتحانات المستوردة صاحبة تاريخ استحقاق
+ * مستقبلي لا تحصل على أي تذكير جديد إطلاقًا إلا لو عدّلها المستخدم يدويًا لاحقًا — أي أن ميزة
+ * "تذكير المهام والامتحانات" المُعلَن عنها في الإعدادات/القنوات تتعطل صامتة بعد كل استعادة.
+ * الإصلاح: حقن [ExamNotificationScheduler] وإلغاء/إعادة جدولة كل التذكيرات ضمن نفس العملية.
+ */
 @Singleton
 class BackupHelper @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val db: AppDatabase
+    private val db: AppDatabase,
+    private val notificationScheduler: ExamNotificationScheduler
 ) {
 
     companion object {
@@ -167,6 +178,12 @@ class BackupHelper @Inject constructor(
             val exams = parseExams(backupData.optJSONArray("exams"))
             val lectures = parseLectures(backupData.optJSONArray("lectures"))
 
+            // Step 3.5: التقط المهام/الامتحانات الحالية (قبل الحذف) لإلغاء تذكيراتها المجدولة.
+            // بدون هذه الخطوة تبقى إشعارات WorkManager القديمة حيّة وقد تُطلق لاحقًا عن
+            // عناصر لم تعد موجودة في القاعدة بعد الاستيراد.
+            val oldTaskIds = db.taskDao().getAllTasksSync().map { it.id }
+            val oldExamIds = db.examDao().getAllExamsSync().map { it.id }
+
             // Step 4: الآن نحذف ونستورد في transaction واحدة.
             // نستخدم withTransaction من Room (suspend) بدل runInTransaction
             // لأن دوال الـ DAO هنا كلها suspend ولا يمكن استدعاؤها داخل Runnable.
@@ -202,6 +219,19 @@ class BackupHelper @Inject constructor(
                 } catch (e: Exception) {
                     throw IOException("فشل استيراد البيانات: ${e.message}")
                 }
+            }
+
+            // Step 5: إلغاء تذكيرات كل المهام/الامتحانات القديمة، ثم إعادة جدولة تذكيرات
+            // المهام/الامتحانات المستوردة فعليًا (بعد نجاح الـ transaction). فشل الجدولة هنا
+            // لا يجب أن يُفشل نتيجة الاستيراد نفسها، لذا يُغلَّف بـ runCatching.
+            runCatching {
+                oldTaskIds.forEach { notificationScheduler.cancelTaskNotifications(it) }
+                oldExamIds.forEach { notificationScheduler.cancelExamNotifications(it) }
+                tasks.filter { !it.dueDate.isNullOrBlank() }
+                    .forEach { notificationScheduler.scheduleTaskNotification(it) }
+                exams.forEach { notificationScheduler.scheduleExamNotification(it) }
+            }.onFailure { e ->
+                android.util.Log.e("BackupHelper", "Failed to reschedule reminders after import", e)
             }
 
             Result.success("تم استيراد النسخة الاحتياطية بنجاح")

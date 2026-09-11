@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.unimanager.app.data.AppDatabase
 import com.unimanager.app.data.entity.FolderEntity
 import com.unimanager.app.data.entity.TaskEntity
+import com.unimanager.app.util.ExamNotificationScheduler
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -35,7 +36,11 @@ class BackupHelperTest {
         database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        helper = BackupHelper(context, database)
+        // BackupHelper يتطلب الآن ExamNotificationScheduler أيضًا (انظر سبب الإصلاح في
+        // BackupHelper.kt: إعادة جدولة تذكيرات المهام/الامتحانات بعد الاستيراد).
+        // ExamNotificationScheduler يبني WorkRequest عبر WorkManager.getInstance(context) فقط،
+        // وهو آمن الإنشاء المباشر هنا لأنه لا يعتمد على أي شيء غير الـ Context.
+        helper = BackupHelper(context, database, ExamNotificationScheduler(context))
         backupFile = File.createTempFile("backup_test", ".json", context.cacheDir)
     }
 
