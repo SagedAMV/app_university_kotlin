@@ -308,30 +308,29 @@ private fun SectionTitle(title: String, color: Color, icon: String? = null) {
 private fun WelcomeCard() {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val colors = if (isDark) {
-        listOf(Color(0xFF6366F1), Color(0xFF8B5CF6), Color(0xFFA855F7))
+        listOf(Color(0xFF4F46E5), Color(0xFF7C3AED), Color(0xFF6D28D9))
     } else {
         listOf(Color(0xFF6366F1), Color(0xFF7C3AED), Color(0xFF8B5CF6))
     }
 
-    // Animated shimmer effect
-    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
-    val shimmerAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.6f,
+    val infiniteTransition = rememberInfiniteTransition(label = "welcome")
+    val floatingOffset by infiniteTransition.animateFloat(
+        initialValue = -14f,
+        targetValue = 14f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
+            animation = tween(5000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "shimmerAlpha"
+        label = "floatingOffset"
     )
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(170.dp)
-            .clip(RoundedCornerShape(32.dp)),
+            .height(170.dp),
+        shape = RoundedCornerShape(30.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Box(
             modifier = Modifier
@@ -339,60 +338,43 @@ private fun WelcomeCard() {
                 .background(
                     brush = Brush.linearGradient(
                         colors = colors,
-                        start = Offset(0f, 0f),
-                        end = Offset(1000f, 1000f)
+                        start = Offset.Zero,
+                        end = Offset(1100f, 700f)
                     )
                 )
         ) {
-            // Animated decorative circles
             Box(
                 modifier = Modifier
-                    .size(140.dp)
+                    .size(130.dp)
                     .align(Alignment.TopEnd)
-                    .offset(x = 30.dp, y = (-30).dp)
+                    .offset(x = 26.dp, y = (-22).dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.12f * shimmerAlpha))
+                    .background(Color.White.copy(alpha = 0.13f))
             )
             Box(
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(90.dp)
                     .align(Alignment.BottomEnd)
-                    .offset(x = (-20).dp, y = 30.dp)
+                    .offset(x = (-20).dp, y = 24.dp + floatingOffset.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.08f * shimmerAlpha))
-            )
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .align(Alignment.CenterStart)
-                    .offset(x = (-10).dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.1f))
+                    .background(Color.White.copy(alpha = 0.08f))
             )
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(28.dp),
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "👋",
-                        fontSize = 32.sp,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Text(
-                        "مرحباً بك",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(Modifier.height(10.dp))
-                val todayName = getTodayName()
                 Text(
-                    "$todayName — يوم مثالي للتعلم ✨",
+                    "📚 مرحباً بك",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "${getTodayName()} — يوم مثالي للتعلّم",
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color.White.copy(alpha = 0.95f),
                     fontWeight = FontWeight.Medium
@@ -411,60 +393,47 @@ private fun StatCard(
     modifier: Modifier = Modifier
 ) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-    
-    // Pulse animation for the icon
-    val infiniteTransition = rememberInfiniteTransition(label = "statPulse")
-    val iconScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "iconScale"
-    )
 
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = if (isDark) 0.18f else 0.12f)
+            containerColor = color.copy(alpha = if (isDark) 0.14f else 0.10f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .scale(iconScale)
+                    .size(52.dp)
                     .clip(CircleShape)
-                    .background(color.copy(alpha = 0.2f)),
+                    .background(color.copy(alpha = 0.20f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     icon,
                     contentDescription = label,
                     tint = color,
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier.size(28.dp)
                 )
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
                 number,
-                style = MaterialTheme.typography.headlineLarge,
+                style = MaterialTheme.typography.headlineMedium,
                 color = color,
                 fontWeight = FontWeight.ExtraBold
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
             Text(
                 label,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                 fontWeight = FontWeight.Medium
             )
         }
@@ -482,18 +451,17 @@ private fun HeroBentoCard(
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val isPressed = remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed.value) 0.97f else 1f,
+        targetValue = if (isPressed.value) 0.985f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMediumLow
         ),
-        label = "pressScale"
+        label = "heroPressScale"
     )
 
-    // Reset isPressed after animation
     LaunchedEffect(isPressed.value) {
         if (isPressed.value) {
-            kotlinx.coroutines.delay(150)
+            kotlinx.coroutines.delay(120)
             isPressed.value = false
         }
     }
@@ -502,43 +470,45 @@ private fun HeroBentoCard(
         modifier = Modifier
             .fillMaxWidth()
             .scale(scale)
-            .clickable(
-                onClick = {
-                    isPressed.value = true
-                    onClick()
-                }
-            ),
-        shape = RoundedCornerShape(24.dp),
+            .clickable {
+                isPressed.value = true
+                onClick()
+            },
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = if (isDark) 0.15f else 0.1f)
+            containerColor = color.copy(alpha = if (isDark) 0.12f else 0.08f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(color.copy(alpha = 0.2f)),
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(color.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(icon, fontSize = 28.sp)
+                Text(icon, fontSize = 24.sp)
             }
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text(subtitle, style = MaterialTheme.typography.bodyMedium)
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             Icon(
                 Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(22.dp)
             )
         }
     }
@@ -555,18 +525,17 @@ private fun QuickAction(
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val isPressed = remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed.value) 0.95f else 1f,
+        targetValue = if (isPressed.value) 0.97f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
+            dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessMedium
         ),
         label = "pressScale"
     )
 
-    // Reset isPressed after animation
     LaunchedEffect(isPressed.value) {
         if (isPressed.value) {
-            kotlinx.coroutines.delay(150)
+            kotlinx.coroutines.delay(120)
             isPressed.value = false
         }
     }
@@ -574,37 +543,40 @@ private fun QuickAction(
     Card(
         modifier = modifier
             .scale(scale)
-            .clickable(
-                onClick = {
-                    isPressed.value = true
-                    onClick()
-                }
-            )
+            .clickable {
+                isPressed.value = true
+                onClick()
+            }
             .aspectRatio(1f),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = if (isDark) 0.12f else 0.08f)
+            containerColor = color.copy(alpha = if (isDark) 0.11f else 0.07f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(50.dp)
                     .clip(CircleShape)
-                    .background(color.copy(alpha = 0.2f)),
+                    .background(color.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(26.dp))
+                Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(24.dp))
             }
-            Spacer(Modifier.height(12.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
@@ -616,52 +588,47 @@ private fun ActivityCard(
     time: String,
     color: Color
 ) {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) 
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-            else 
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(50.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(color.copy(alpha = 0.2f)),
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(color.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(icon, fontSize = 24.sp)
+                Text(icon, fontSize = 22.sp)
             }
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    title, 
-                    style = MaterialTheme.typography.bodyLarge, 
+                    title,
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    time, 
-                    style = MaterialTheme.typography.bodySmall, 
+                    time,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
             }
             Box(
                 modifier = Modifier
-                    .size(8.dp)
+                    .size(7.dp)
                     .clip(CircleShape)
                     .background(color)
             )

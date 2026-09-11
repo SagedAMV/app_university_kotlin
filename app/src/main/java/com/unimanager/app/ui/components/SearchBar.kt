@@ -25,8 +25,13 @@ fun SearchBar(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        placeholder = { Text(placeholder) },
+        shape = RoundedCornerShape(18.dp),
+        placeholder = {
+            Text(
+                placeholder,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
+            )
+        },
         leadingIcon = {
             Icon(
                 Icons.Filled.Search,
@@ -48,6 +53,12 @@ fun SearchBar(
                 }
             }
         },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+        ),
         singleLine = true
     )
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,7 +82,7 @@ fun UnifiedScreen(viewModel: AppViewModel, navController: NavController) {
             TopAppBar(
                 title = {
                     Text(
-                        " الأقسام",
+                        "الأقسام",
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
@@ -132,19 +133,21 @@ fun UnifiedScreen(viewModel: AppViewModel, navController: NavController) {
             )
 
             // Tab buttons
-            Row(
+            LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(horizontal = 2.dp)
             ) {
-                tabs.forEachIndexed { index, tab ->
+                items(tabs.size) { index ->
+                    val tab = tabs[index]
                     TabButton(
                         icon = tab.icon,
                         label = tab.label,
                         color = tab.color,
                         selected = selectedTab == index,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.widthIn(min = 104.dp)
                     ) {
                         selectedTab = index
                         searchQuery = ""
@@ -153,12 +156,18 @@ fun UnifiedScreen(viewModel: AppViewModel, navController: NavController) {
             }
 
             // Tab content — يجب أن يملأ باقي المساحة المتبقية أسفل التبويبات
-            Box(
+            AnimatedContent(
+                targetState = selectedTab,
+                transitionSpec = {
+                    fadeIn(tween(220)) + slideInHorizontally { it / 6 } togetherWith
+                        fadeOut(tween(180)) + slideOutHorizontally { -it / 7 }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                when (selectedTab) {
+                    .weight(1f),
+                label = "tabContentTransition"
+            ) { tabIndex ->
+                when (tabIndex) {
                     0 -> TasksTab(
                         viewModel = viewModel,
                         searchQuery = searchQuery,
@@ -175,7 +184,7 @@ fun UnifiedScreen(viewModel: AppViewModel, navController: NavController) {
                         searchQuery = searchQuery,
                         onAdd = { showAddDialog = true }
                     )
-                    3 -> ExamsTab(
+                    else -> ExamsTab(
                         viewModel = viewModel,
                         searchQuery = searchQuery,
                         onAdd = { showAddDialog = true }
@@ -243,42 +252,45 @@ fun TabButton(
     onClick: () -> Unit
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (selected) 1.05f else 1f,
+        targetValue = if (selected) 1.02f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
+            dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessMedium
         ),
         label = "tabScale"
+    )
+
+    val background by animateColorAsState(
+        targetValue = if (selected) color.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surfaceVariant,
+        animationSpec = tween(220),
+        label = "tabBackground"
     )
 
     Card(
         modifier = modifier
             .scale(scale)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) color.copy(alpha = 0.2f)
-            else MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (selected) 4.dp else 0.dp)
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = background),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (selected) 2.dp else 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
                 icon,
                 contentDescription = label,
                 tint = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(23.dp)
             )
             Spacer(Modifier.height(4.dp))
             Text(
                 label,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 color = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

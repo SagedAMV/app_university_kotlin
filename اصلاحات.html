@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تقرير إصلاحات UniManager</title>
+  <style>
+    :root {
+      --bg: #f4f7ff;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --p: #6366f1;
+      --s: #0ea5a4;
+      --w: #f59e0b;
+      --d: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: radial-gradient(circle at top right, #eef2ff, var(--bg));
+      color: var(--text);
+      line-height: 1.8;
+    }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 28px 18px 50px; }
+    .hero {
+      background: linear-gradient(125deg, #4f46e5, #7c3aed 55%, #8b5cf6);
+      color: #fff;
+      padding: 28px;
+      border-radius: 24px;
+      box-shadow: 0 16px 35px rgba(79, 70, 229, .25);
+      position: relative;
+      overflow: hidden;
+      animation: rise .7s ease;
+    }
+    .hero::before, .hero::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,.15);
+      animation: float 6s ease-in-out infinite;
+    }
+    .hero::before { width: 140px; height: 140px; top: -25px; left: -20px; }
+    .hero::after { width: 90px; height: 90px; bottom: -25px; left: 35%; animation-delay: 1s; }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      margin-top: 18px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .07);
+      border: 1px solid #e2e8f0;
+      animation: rise .65s ease;
+    }
+    .tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    .p { background: var(--p); }
+    .s { background: var(--s); }
+    .w { background: var(--w); }
+    .d { background: var(--d); }
+
+    ul { margin: 10px 0 0; padding-right: 18px; }
+    .footer {
+      margin-top: 24px;
+      background: #eef2ff;
+      border: 1px dashed #c7d2fe;
+      border-radius: 14px;
+      padding: 14px;
+      color: #312e81;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>تقرير إصلاحات واجهات التطبيق</h1>
+      <p>تمت معالجة مشكلات التشوّه البصري في الشاشات الرئيسية والأقسام، مع ضبط الأنيميشن ليكون ناعمًا وعمليًا دون ازدحام بصري.</p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <span class="tag p">Dashboard</span>
+        <h3>تنظيف بطاقات الواجهة الرئيسية</h3>
+        <ul>
+          <li>تخفيف الظلال والشفافية المبالغ بها لتجنب مظهر الطبقات.</li>
+          <li>تبسيط بطاقات الإحصائيات والإجراءات السريعة.</li>
+          <li>تحسين بطاقة الترحيب مع حركة خفيفة مستقرة.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <span class="tag s">Tabs</span>
+        <h3>تحسين تجربة تبويبات الأقسام</h3>
+        <ul>
+          <li>تحويل التبويبات إلى صف أفقي قابل للتمرير.</li>
+          <li>إضافة انتقال ناعم بين محتويات التبويب.</li>
+          <li>تحسين تباين حالة التبويب النشط.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <span class="tag w">Search</span>
+        <h3>تحديث مظهر شريط البحث</h3>
+        <ul>
+          <li>تكبير الزوايا وتحسين ألوان الحدود في حالتي التركيز/الخمول.</li>
+          <li>تحسين وضوح نص الـ placeholder باللغة العربية.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <span class="tag d">Cleanup</span>
+        <h3>ضبط الحركة لتخدم المحتوى</h3>
+        <ul>
+          <li>استبدال الحركات المبالغ بها بحركات ضغط وانتقال خفيفة.</li>
+          <li>الإبقاء على هوية بصرية حديثة بدون ضبابية مشتتة.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="footer">
+      <strong>ملاحظة:</strong> الملف <code>تعليمات.md</code> لم يتم حذفه، وتم الالتزام بتنفيذ التحسينات التصميمية والأنيميشن المطلوبة ضمن ملفات الواجهة.
+    </section>
+  </div>
+</body>
+</html>
