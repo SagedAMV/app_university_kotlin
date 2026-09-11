@@ -110,17 +110,34 @@ fun GalaxyScreen(viewModel: AppViewModel, navController: NavController) {
                 val centerY = size.height / 2 + offset.y
                 val radius = (size.minDimension * 0.3f) * scale
 
-                // Draw center (sun)
+                // Draw center (sun) with enhanced glow
+                // Outer glow layers
                 drawCircle(
-                    color = Color(0xFFF59E0B),
-                    radius = 40f * scale,
+                    color = Color(0xFFF59E0B).copy(alpha = 0.1f),
+                    radius = 90f * scale,
                     center = Offset(centerX, centerY)
                 )
-
                 drawCircle(
-                    color = Color(0xFFF59E0B).copy(alpha = 0.3f),
-                    radius = 60f * scale,
+                    color = Color(0xFFF59E0B).copy(alpha = 0.2f),
+                    radius = 70f * scale,
                     center = Offset(centerX, centerY)
+                )
+                drawCircle(
+                    color = Color(0xFFF59E0B).copy(alpha = 0.4f),
+                    radius = 50f * scale,
+                    center = Offset(centerX, centerY)
+                )
+                // Core
+                drawCircle(
+                    color = Color(0xFFF59E0B),
+                    radius = 35f * scale,
+                    center = Offset(centerX, centerY)
+                )
+                // Inner highlight
+                drawCircle(
+                    color = Color(0xFFFBBF24).copy(alpha = 0.8f),
+                    radius = 25f * scale,
+                    center = Offset(centerX - 5f * scale, centerY - 5f * scale)
                 )
 
                 // Draw folders around center

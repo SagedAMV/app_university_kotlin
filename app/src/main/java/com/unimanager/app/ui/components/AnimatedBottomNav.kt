@@ -22,53 +22,79 @@ fun AnimatedBottomNavBar(
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
     NavigationBar(
-        modifier = Modifier.height(72.dp),
-        tonalElevation = 0.dp
+        modifier = Modifier.height(76.dp),
+        tonalElevation = 2.dp,
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
-        navItems.forEach { item ->
+        navItems.forEachIndexed { index, item ->
             val selected = currentBackStackEntry?.destination?.hierarchy?.any {
                 it.route == item.route || it.route?.startsWith("${item.route}?") == true
             } == true
 
             val scale by animateFloatAsState(
-                targetValue = if (selected) 1.1f else 1f,
+                targetValue = if (selected) 1.15f else 1f,
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
                     stiffness = Spring.StiffnessMedium
                 ),
-                label = "navScale"
+                label = "navScale_$index"
+            )
+
+            val iconRotation by animateFloatAsState(
+                targetValue = if (selected) 360f else 0f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                ),
+                label = "navRotation_$index"
             )
 
             NavigationBarItem(
                 selected = selected,
                 onClick = {
-                    navController.navigate(item.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+                    if (!selected) {
+                        navController.navigate(item.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 },
                 icon = {
                     Box(modifier = Modifier.scale(scale)) {
-                        Icon(
-                            item.icon,
-                            contentDescription = item.label,
-                            tint = if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        androidx.compose.animation.AnimatedContent(
+                            targetState = selected,
+                            transitionSpec = {
+                                fadeIn(tween(300)) + scaleIn(initialScale = 0.8f) togetherWith
+                                        fadeOut(tween(200)) + scaleOut(targetScale = 0.8f)
+                            },
+                            label = "iconAnim_$index"
+                        ) { isSelected ->
+                            Icon(
+                                item.icon,
+                                contentDescription = item.label,
+                                tint = if (isSelected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(if (isSelected) 26.dp else 24.dp)
+                            )
+                        }
                     }
                 },
                 label = {
                     androidx.compose.animation.AnimatedVisibility(
                         visible = selected,
-                        enter = fadeIn(tween(200)) + expandVertically(),
-                        exit = fadeOut(tween(200)) + shrinkVertically()
+                        enter = fadeIn(tween(250)) + expandVertically(tween(250)) + 
+                                slideInVertically { -it / 2 },
+                        exit = fadeOut(tween(200)) + shrinkVertically() + 
+                               slideOutVertically { -it / 2 }
                     ) {
                         Text(
                             item.label,
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                            ),
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1
                         )
@@ -76,7 +102,8 @@ fun AnimatedBottomNavBar(
                 },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = MaterialTheme.colorScheme.primary,
-                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }
