@@ -29,15 +29,16 @@ import com.unimanager.app.data.entity.NoteEntity
 import com.unimanager.app.data.entity.TaskEntity
 import com.unimanager.app.ui.components.*
 import com.unimanager.app.ui.theme.*
-import com.unimanager.app.viewmodel.*
+import com.unimanager.app.viewmodel.AppViewModel
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UnifiedScreen(appViewModel: AppViewModel) {
+fun UnifiedScreen(viewModel: AppViewModel) {
     var selectedTab by remember { mutableStateOf(0) }
     var showAddDialog by remember { mutableStateOf(false) }
     var screenVisible by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) { screenVisible = true }
 
@@ -60,7 +61,14 @@ fun UnifiedScreen(appViewModel: AppViewModel) {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
-                )
+                ),
+                actions = {
+                    if (searchQuery.isNotBlank()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Filled.Clear, contentDescription = "مسح")
+                        }
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -87,6 +95,15 @@ fun UnifiedScreen(appViewModel: AppViewModel) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Search Bar
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = { searchQuery = it },
+                onClear = { searchQuery = "" },
+                placeholder = "بحث في ${tabs[selectedTab].label}...",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
             // Tab buttons
             Row(
                 modifier = Modifier
@@ -103,16 +120,17 @@ fun UnifiedScreen(appViewModel: AppViewModel) {
                         modifier = Modifier.weight(1f)
                     ) {
                         selectedTab = index
+                        searchQuery = ""
                     }
                 }
             }
 
             // Tab content
             when (selectedTab) {
-                0 -> TasksTab(appViewModel = appViewModel)
-                1 -> ScheduleTab(appViewModel = appViewModel)
-                2 -> NotesTab(appViewModel = appViewModel)
-                3 -> ExamsTab(appViewModel = appViewModel)
+                0 -> TasksTab(viewModel = viewModel, searchQuery = searchQuery)
+                1 -> ScheduleTab(viewModel = viewModel, searchQuery = searchQuery)
+                2 -> NotesTab(viewModel = viewModel, searchQuery = searchQuery)
+                3 -> ExamsTab(viewModel = viewModel, searchQuery = searchQuery)
             }
         }
     }
@@ -123,14 +141,14 @@ fun UnifiedScreen(appViewModel: AppViewModel) {
             0 -> AddTaskDialog(
                 onDismiss = { showAddDialog = false },
                 onAdd = { title, desc, priority ->
-                    appViewModel.insertTask(TaskEntity(title = title, description = desc, priority = priority))
+                    viewModel.insertTask(TaskEntity(title = title, description = desc, priority = priority))
                     showAddDialog = false
                 }
             )
             1 -> AddLectureDialog(
                 onDismiss = { showAddDialog = false },
                 onAdd = { subject, doctor, day, timeFrom, timeTo, room ->
-                    appViewModel.insertLecture(LectureEntity(
+                    viewModel.insertLecture(LectureEntity(
                         subject = subject,
                         doctor = doctor,
                         day = day,
@@ -144,14 +162,14 @@ fun UnifiedScreen(appViewModel: AppViewModel) {
             2 -> AddNoteDialog(
                 onDismiss = { showAddDialog = false },
                 onAdd = { title, content ->
-                    appViewModel.insertNote(NoteEntity(title = title, content = content))
+                    viewModel.insertNote(NoteEntity(title = title, content = content))
                     showAddDialog = false
                 }
             )
             3 -> AddExamDialog(
                 onDismiss = { showAddDialog = false },
                 onAdd = { subject, type, date, time, room ->
-                    appViewModel.insertExam(ExamEntity(
+                    viewModel.insertExam(ExamEntity(
                         subject = subject,
                         type = type,
                         examDate = date,
@@ -219,46 +237,68 @@ fun TabButton(
 }
 
 @Composable
-fun TasksTab(appViewModel: AppViewModel) {
-    val tasks by appViewModel.allTasks.collectAsState()
+fun TasksTab(viewModel: AppViewModel, searchQuery: String) {
+    val tasks by viewModel.allTasks.collectAsState()
+    val filteredTasks = if (searchQuery.isBlank()) tasks
+    else tasks.filter { it.title.contains(searchQuery, ignoreCase = true) }
 
-    if (tasks.isEmpty()) {
-        EmptyStateEnhanced(
-            icon = "✅",
-            title = "لا توجد مهام",
-            subtitle = "اضغط + لإضافة مهمة",
-            actionText = "إضافة مهمة",
-            onActionClick = { /* TODO */ }
-        )
+    if (filteredTasks.isEmpty()) {
+        if (searchQuery.isNotBlank()) {
+            EmptyStateEnhanced(
+                icon = "",
+                title = "لا توجد نتائج",
+                subtitle = "جرب كلمات أخرى",
+                actionText = "مسح البحث",
+                onActionClick = { /* Clear search */ }
+            )
+        } else {
+            EmptyStateEnhanced(
+                icon = "✅",
+                title = "لا توجد مهام",
+                subtitle = "اضغط + لإضافة مهمة",
+                actionText = "إضافة مهمة",
+                onActionClick = { /* TODO */ }
+            )
+        }
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            items(tasks, key = { it.id }) { task ->
-                TaskItem(
-                    task = task,
-                    onToggle = { appViewModel.toggleTaskDone(task.id, !task.isDone) },
-                    onDelete = { appViewModel.deleteTask(task) }
-                )
+            items(filteredTasks, key = { it.id }) { task ->
+                SwipeableItem(
+                    onSwipe = { viewModel.deleteTask(task) }
+                ) {
+                    TaskItem(
+                        task = task,
+                        onToggle = { viewModel.toggleTaskDone(task.id, !task.isDone) },
+                        onDelete = { viewModel.deleteTask(task) }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun ScheduleTab(appViewModel: AppViewModel) {
-    val lectures by appViewModel.allLectures.collectAsState()
+fun ScheduleTab(viewModel: AppViewModel, searchQuery: String) {
+    val lectures by viewModel.allLectures.collectAsState()
     val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة")
 
-    if (lectures.isEmpty()) {
+    val filteredLectures = if (searchQuery.isBlank()) lectures
+    else lectures.filter {
+        it.subject.contains(searchQuery, ignoreCase = true) ||
+        it.doctor.contains(searchQuery, ignoreCase = true)
+    }
+
+    if (filteredLectures.isEmpty()) {
         EmptyStateEnhanced(
             icon = "",
-            title = "لا توجد محاضرات",
-            subtitle = "اضغط + لإضافة محاضرة",
-            actionText = "إضافة محاضرة",
-            onActionClick = { /* TODO */ }
+            title = if (searchQuery.isNotBlank()) "لا توجد نتائج" else "لا توجد محاضرات",
+            subtitle = if (searchQuery.isNotBlank()) "جرب كلمات أخرى" else "اضغط + لإضافة محاضرة",
+            actionText = if (searchQuery.isBlank()) "إضافة محاضرة" else null,
+            onActionClick = if (searchQuery.isBlank()) { /* TODO */ } else null
         )
     } else {
         LazyColumn(
@@ -267,7 +307,7 @@ fun ScheduleTab(appViewModel: AppViewModel) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             days.forEach { day ->
-                val dayLectures = lectures.filter { it.day == day }
+                val dayLectures = filteredLectures.filter { it.day == day }
                 if (dayLectures.isNotEmpty()) {
                     item {
                         Text(
@@ -278,10 +318,14 @@ fun ScheduleTab(appViewModel: AppViewModel) {
                         )
                     }
                     items(dayLectures) { lecture ->
-                        LectureItem(
-                            lecture = lecture,
-                            onDelete = { appViewModel.deleteLecture(lecture) }
-                        )
+                        SwipeableItem(
+                            onSwipe = { viewModel.deleteLecture(lecture) }
+                        ) {
+                            LectureItem(
+                                lecture = lecture,
+                                onDelete = { viewModel.deleteLecture(lecture) }
+                            )
+                        }
                     }
                 }
             }
@@ -290,16 +334,21 @@ fun ScheduleTab(appViewModel: AppViewModel) {
 }
 
 @Composable
-fun NotesTab(appViewModel: AppViewModel) {
-    val notes by appViewModel.allNotes.collectAsState()
+fun NotesTab(viewModel: AppViewModel, searchQuery: String) {
+    val notes by viewModel.allNotes.collectAsState()
+    val filteredNotes = if (searchQuery.isBlank()) notes
+    else notes.filter {
+        it.title.contains(searchQuery, ignoreCase = true) ||
+        it.content.contains(searchQuery, ignoreCase = true)
+    }
 
-    if (notes.isEmpty()) {
+    if (filteredNotes.isEmpty()) {
         EmptyStateEnhanced(
             icon = "📝",
-            title = "لا توجد ملاحظات",
-            subtitle = "اضغط + لإضافة ملاحظة",
-            actionText = "إضافة ملاحظة",
-            onActionClick = { /* TODO */ }
+            title = if (searchQuery.isNotBlank()) "لا توجد نتائج" else "لا توجد ملاحظات",
+            subtitle = if (searchQuery.isNotBlank()) "جرب كلمات أخرى" else "اضغط + لإضافة ملاحظة",
+            actionText = if (searchQuery.isBlank()) "إضافة ملاحظة" else null,
+            onActionClick = if (searchQuery.isBlank()) { /* TODO */ } else null
         )
     } else {
         LazyColumn(
@@ -307,27 +356,33 @@ fun NotesTab(appViewModel: AppViewModel) {
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            items(notes, key = { it.id }) { note ->
-                NoteItem(
-                    note = note,
-                    onDelete = { appViewModel.deleteNote(note) }
-                )
+            items(filteredNotes, key = { it.id }) { note ->
+                SwipeableItem(
+                    onSwipe = { viewModel.deleteNote(note) }
+                ) {
+                    NoteItem(
+                        note = note,
+                        onDelete = { viewModel.deleteNote(note) }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun ExamsTab(appViewModel: AppViewModel) {
-    val exams by appViewModel.allExams.collectAsState()
+fun ExamsTab(viewModel: AppViewModel, searchQuery: String) {
+    val exams by viewModel.allExams.collectAsState()
+    val filteredExams = if (searchQuery.isBlank()) exams
+    else exams.filter { it.subject.contains(searchQuery, ignoreCase = true) }
 
-    if (exams.isEmpty()) {
+    if (filteredExams.isEmpty()) {
         EmptyStateEnhanced(
             icon = "",
-            title = "لا توجد امتحانات",
-            subtitle = "اضغط + لإضافة امتحان",
-            actionText = "إضافة امتحان",
-            onActionClick = { /* TODO */ }
+            title = if (searchQuery.isNotBlank()) "لا توجد نتائج" else "لا توجد امتحانات",
+            subtitle = if (searchQuery.isNotBlank()) "جرب كلمات أخرى" else "اضغط + لإضافة امتحان",
+            actionText = if (searchQuery.isBlank()) "إضافة امتحان" else null,
+            onActionClick = if (searchQuery.isBlank()) { /* TODO */ } else null
         )
     } else {
         LazyColumn(
@@ -335,16 +390,21 @@ fun ExamsTab(appViewModel: AppViewModel) {
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(exams) { exam ->
-                ExamItem(
-                    exam = exam,
-                    onDelete = { appViewModel.deleteExam(exam) }
-                )
+            items(filteredExams) { exam ->
+                SwipeableItem(
+                    onSwipe = { viewModel.deleteExam(exam) }
+                ) {
+                    ExamItem(
+                        exam = exam,
+                        onDelete = { viewModel.deleteExam(exam) }
+                    )
+                }
             }
         }
     }
 }
 
+// ... (keep existing TaskItem, LectureItem, NoteItem, ExamItem, and Dialog composables)
 @Composable
 fun TaskItem(task: TaskEntity, onToggle: () -> Unit, onDelete: () -> Unit) {
     val priorityColor = when (task.priority) {
@@ -558,27 +618,8 @@ fun ExamItem(exam: ExamEntity, onDelete: () -> Unit) {
             }
             Spacer(Modifier.height(8.dp))
             Text("${exam.type} • ${exam.examDate}", style = MaterialTheme.typography.bodyMedium)
-            if (exam.time.isNotBlank()) Text(" ${exam.time}", style = MaterialTheme.typography.bodySmall)
+            if (exam.time.isNotBlank()) Text("⏰ ${exam.time}", style = MaterialTheme.typography.bodySmall)
             if (exam.room.isNotBlank()) Text("📍 ${exam.room}", style = MaterialTheme.typography.bodySmall)
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = { /* TODO: Edit */ },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) { Text("️ تعديل") }
-                Button(
-                    onClick = onDelete,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = Danger.copy(alpha = 0.1f)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("🗑️ حذف", color = Danger)
-                }
-            }
         }
     }
 }
@@ -596,44 +637,17 @@ fun AddTaskDialog(onDismiss: () -> Unit, onAdd: (String, String, String) -> Unit
         title = { Text("مهمة جديدة", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("العنوان") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = desc,
-                    onValueChange = { desc = it },
-                    label = { Text("الوصف (اختياري)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    maxLines = 3
-                )
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("العنوان") }, shape = RoundedCornerShape(12.dp), singleLine = true)
+                OutlinedTextField(value = desc, onValueChange = { desc = it }, label = { Text("الوصف") }, shape = RoundedCornerShape(12.dp), maxLines = 3)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("🔴 عالية" to "high", "🟡 متوسطة" to "medium", "🟢 منخفضة" to "low").forEach { (label, value) ->
-                        FilterChip(
-                            selected = priority == value,
-                            onClick = { priority = value },
-                            label = { Text(label) },
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                    listOf("🔴 عالية" to "high", "🟡 متوسطة" to "medium", " منخفضة" to "low").forEach { (label, value) ->
+                        FilterChip(selected = priority == value, onClick = { priority = value }, label = { Text(label) }, shape = RoundedCornerShape(12.dp))
                     }
                 }
             }
         },
-        confirmButton = {
-            Button(
-                enabled = title.isNotBlank(),
-                onClick = { onAdd(title, desc, priority) },
-                shape = RoundedCornerShape(12.dp)
-            ) { Text("إضافة") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") }
-        }
+        confirmButton = { Button(enabled = title.isNotBlank(), onClick = { onAdd(title, desc, priority) }, shape = RoundedCornerShape(12.dp)) { Text("إضافة") } },
+        dismissButton = { TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") } }
     )
 }
 
@@ -656,9 +670,7 @@ fun AddLectureDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Stri
                 OutlinedTextField(value = subject, onValueChange = { subject = it }, label = { Text("المادة") }, shape = RoundedCornerShape(12.dp), singleLine = true)
                 OutlinedTextField(value = doctor, onValueChange = { doctor = it }, label = { Text("الدكتور") }, shape = RoundedCornerShape(12.dp), singleLine = true)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    days.forEach { d ->
-                        FilterChip(selected = day == d, onClick = { day = d }, label = { Text(d.take(3)) }, shape = RoundedCornerShape(12.dp))
-                    }
+                    days.forEach { d -> FilterChip(selected = day == d, onClick = { day = d }, label = { Text(d.take(3)) }, shape = RoundedCornerShape(12.dp)) }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = timeFrom, onValueChange = { timeFrom = it }, label = { Text("من") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true)
@@ -667,12 +679,8 @@ fun AddLectureDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Stri
                 OutlinedTextField(value = room, onValueChange = { room = it }, label = { Text("القاعة") }, shape = RoundedCornerShape(12.dp), singleLine = true)
             }
         },
-        confirmButton = {
-            Button(enabled = subject.isNotBlank() && timeFrom.isNotBlank(), onClick = { onAdd(subject, doctor, day, timeFrom, timeTo, room) }, shape = RoundedCornerShape(12.dp)) { Text("إضافة") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") }
-        }
+        confirmButton = { Button(enabled = subject.isNotBlank() && timeFrom.isNotBlank(), onClick = { onAdd(subject, doctor, day, timeFrom, timeTo, room) }, shape = RoundedCornerShape(12.dp)) { Text("إضافة") } },
+        dismissButton = { TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") } }
     )
 }
 
@@ -691,12 +699,8 @@ fun AddNoteDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
                 OutlinedTextField(value = content, onValueChange = { content = it }, label = { Text("المحتوى") }, modifier = Modifier.fillMaxWidth().height(120.dp), shape = RoundedCornerShape(12.dp))
             }
         },
-        confirmButton = {
-            Button(enabled = title.isNotBlank(), onClick = { onAdd(title, content) }, shape = RoundedCornerShape(12.dp)) { Text("حفظ") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") }
-        }
+        confirmButton = { Button(enabled = title.isNotBlank(), onClick = { onAdd(title, content) }, shape = RoundedCornerShape(12.dp)) { Text("حفظ") } },
+        dismissButton = { TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") } }
     )
 }
 
@@ -716,21 +720,15 @@ fun AddExamDialog(onDismiss: () -> Unit, onAdd: (String, String, String, String,
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(value = subject, onValueChange = { subject = it }, label = { Text("المادة") }, shape = RoundedCornerShape(12.dp), singleLine = true)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("نصفي", "نهائي", "فجائي", "عملي").forEach { t ->
-                        FilterChip(selected = type == t, onClick = { type = t }, label = { Text(t) }, shape = RoundedCornerShape(12.dp))
-                    }
+                    listOf("نصفي", "نهائي", "فجائي", "عملي").forEach { t -> FilterChip(selected = type == t, onClick = { type = t }, label = { Text(t) }, shape = RoundedCornerShape(12.dp)) }
                 }
                 OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("التاريخ YYYY-MM-DD") }, shape = RoundedCornerShape(12.dp), singleLine = true)
                 OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text("الوقت") }, shape = RoundedCornerShape(12.dp), singleLine = true)
                 OutlinedTextField(value = room, onValueChange = { room = it }, label = { Text("القاعة") }, shape = RoundedCornerShape(12.dp), singleLine = true)
             }
         },
-        confirmButton = {
-            Button(enabled = subject.isNotBlank() && date.isNotBlank(), onClick = { onAdd(subject, type, date, time, room) }, shape = RoundedCornerShape(12.dp)) { Text("إضافة") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") }
-        }
+        confirmButton = { Button(enabled = subject.isNotBlank() && date.isNotBlank(), onClick = { onAdd(subject, type, date, time, room) }, shape = RoundedCornerShape(12.dp)) { Text("إضافة") } },
+        dismissButton = { TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") } }
     )
 }
 
