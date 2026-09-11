@@ -103,34 +103,3 @@ fun TimePickerField(
         showDialog = false
     }
 }
-
-/**
- * Date & Time Picker Combined
- */
-@Composable
-fun DateTimePickerRow(
-    dateValue: String,
-    onDateChange: (String) -> Unit,
-    timeValue: String,
-    onTimeChange: (String) -> Unit,
-    dateLabel: String = "التاريخ",
-    timeLabel: String = "الوقت"
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        DatePickerField(
-            value = dateValue,
-            onValueChange = onDateChange,
-            label = dateLabel,
-            modifier = Modifier.weight(1.2f)
-        )
-        TimePickerField(
-            value = timeValue,
-            onValueChange = onTimeChange,
-            label = timeLabel,
-            modifier = Modifier.weight(0.8f)
-        )
-    }
-}

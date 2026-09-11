@@ -9,7 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
@@ -22,9 +22,8 @@ import com.unimanager.app.ui.galaxy.GalaxyScreen
 import com.unimanager.app.ui.settings.SettingsScreen
 import com.unimanager.app.ui.theme.UniManagerTheme
 import com.unimanager.app.ui.unified.UnifiedScreen
-import com.unimanager.app.util.ThemePreferenceManager
 import com.unimanager.app.viewmodel.AppViewModel
-import kotlinx.coroutines.launch
+import com.unimanager.app.viewmodel.ThemeViewModel
 
 data class NavItem(
     val route: String,
@@ -42,13 +41,11 @@ val navItems = listOf(
 @Composable
 fun AppNavigation(viewModel: AppViewModel) {
     val navController = rememberNavController()
-    val context = LocalContext.current
-    val themeManager = remember { ThemePreferenceManager(context) }
+    val themeViewModel: ThemeViewModel = hiltViewModel()
 
     // Theme state
-    val isDarkTheme by themeManager.isDarkTheme.collectAsState(initial = false)
-    val useDynamicColor by themeManager.useDynamicColor.collectAsState(initial = false)
-    val scope = rememberCoroutineScope()
+    val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
+    val useDynamicColor by themeViewModel.useDynamicColor.collectAsState()
 
     // Apply theme
     UniManagerTheme(
@@ -98,12 +95,18 @@ fun AppNavigation(viewModel: AppViewModel) {
                 ) { FilesScreen(viewModel = viewModel, navController = navController) }
 
                 composable(
-                    Routes.Unified.route,
+                    Routes.Unified.pattern,
+                    arguments = listOf(
+                        navArgument(Routes.Unified.TAB_ARG) {
+                            type = NavType.IntType
+                            defaultValue = 0
+                        }
+                    ),
                     enterTransition = { fadeIn(tween(300)) + slideInVertically { it / 3 } },
                     exitTransition = { fadeOut(tween(200)) },
                     popEnterTransition = { fadeIn(tween(300)) },
                     popExitTransition = { fadeOut(tween(200)) }
-                ) { UnifiedScreen(viewModel = viewModel) }
+                ) { UnifiedScreen(viewModel = viewModel, navController = navController) }
 
                 composable(
                     Routes.Galaxy.route,
@@ -124,11 +127,9 @@ fun AppNavigation(viewModel: AppViewModel) {
                         onBack = { navController.popBackStack() },
                         onBackupClick = { navController.navigate(Routes.Backup.route) },
                         isDarkTheme = isDarkTheme,
-                        onThemeChange = { isDark ->
-                            scope.launch {
-                                themeManager.setDarkTheme(isDark)
-                            }
-                        }
+                        onThemeChange = themeViewModel::setDarkTheme,
+                        useDynamicColor = useDynamicColor,
+                        onDynamicColorChange = themeViewModel::setDynamicColor
                     )
                 }
 

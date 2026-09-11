@@ -86,6 +86,11 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
     var screenVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
+    // حالات التعديل/الحذف (الحذف يمرّ عبر حوار تأكيد بدل الحذف الفوري)
+    var editingFolder by remember { mutableStateOf<FolderEntity?>(null) }
+    var deletingFolder by remember { mutableStateOf<FolderEntity?>(null) }
+    var deletingFile by remember { mutableStateOf<FileEntity?>(null) }
+
     // Folder navigation state (يدعم فتح مجلد قادم من شاشة المجرة عبر وسيط التنقل)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val initialFolderId = navBackStackEntry
@@ -205,14 +210,16 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
                     }
                     items(filteredFolders, key = { it.id }) { folder ->
                         SwipeableItem(
-                            onSwipe = { viewModel.deleteFolder(folder) }
+                            onSwipe = { deletingFolder = folder }
                         ) {
                             FolderItem(
                                 folder = folder,
                                 fileCount = displayFiles.count { it.folderId == folder.id },
                                 onFolderClick = {
                                     currentFolderId = folder.id
-                                }
+                                },
+                                onEdit = { editingFolder = folder },
+                                onDelete = { deletingFolder = folder }
                             )
                         }
                     }
@@ -224,7 +231,7 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
                     }
                     items(filteredFiles, key = { it.id }) { file ->
                         SwipeableItem(
-                            onSwipe = { viewModel.deleteFile(file) }
+                            onSwipe = { deletingFile = file }
                         ) {
                             FileItem(
                                 file = file,
@@ -233,7 +240,8 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
                                 },
                                 onFavoriteToggle = {
                                     viewModel.toggleFavorite(file.id, !file.isFavorite)
-                                }
+                                },
+                                onDelete = { deletingFile = file }
                             )
                         }
                     }
@@ -282,6 +290,119 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
             }
         )
     }
+
+    // تعديل المجلد (إعادة التسمية/اللون)
+    editingFolder?.let { folder ->
+        EditFolderDialog(
+            folder = folder,
+            onDismiss = { editingFolder = null },
+            onConfirm = { name, color ->
+                viewModel.updateFolder(folder.copy(name = name, color = color))
+                editingFolder = null
+            }
+        )
+    }
+
+    // تأكيد حذف مجلد (يشمل المجلدات الفرعية وملفاتها — تتالي في Room + حذف فيزيائي)
+    deletingFolder?.let { folder ->
+        ConfirmActionDialog(
+            title = "حذف المجلد",
+            message = "سيتم حذف المجلد «${folder.name}» وكل ما بداخله من مجلدات وملفات نهائياً. هل أنت متأكد؟",
+            icon = Icons.Filled.FolderDelete,
+            confirmText = "حذف",
+            onConfirm = { viewModel.deleteFolder(folder); deletingFolder = null },
+            onDismiss = { deletingFolder = null }
+        )
+    }
+
+    // تأكيد حذف ملف (يحذف النسخة الفعلية من تخزين التطبيق)
+    deletingFile?.let { file ->
+        ConfirmActionDialog(
+            title = "حذف الملف",
+            message = "سيتم حذف الملف «${file.name}» نهائياً من جهازك. هل أنت متأكد؟",
+            icon = Icons.Filled.Delete,
+            confirmText = "حذف",
+            onConfirm = { viewModel.deleteFile(file); deletingFile = null },
+            onDismiss = { deletingFile = null }
+        )
+    }
+}
+
+/** لوحة الألوان المتاحة للمجلدات (HEX) */
+private val FOLDER_COLOR_PALETTE = listOf(
+    "#6366f1", // بنفسجي
+    "#0ea5e9", // أزرق
+    "#10b981", // أخضر
+    "#f59e0b", // كهرماني
+    "#ef4444", // أحمر
+    "#ec4899"  // وردي
+)
+
+/** حوار تعديل مجلد: إعادة التسمية واختيار اللون */
+@Composable
+fun EditFolderDialog(
+    folder: FolderEntity,
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, color: String) -> Unit
+) {
+    var name by remember { mutableStateOf(folder.name) }
+    var color by remember { mutableStateOf(folder.color) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = { Text("تعديل المجلد", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("اسم المجلد") },
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
+                Text(
+                    "لون المجلد",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FOLDER_COLOR_PALETTE.forEach { hex ->
+                        val tint = folderTint(hex)
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (color == hex) tint else tint.copy(alpha = 0.35f)
+                                )
+                                .clickable { color = hex },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (color == hex) {
+                                Icon(
+                                    Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = name.isNotBlank(),
+                onClick = { onConfirm(name.trim(), color) },
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("حفظ") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("إلغاء") }
+        }
+    )
 }
 
 /**
@@ -420,7 +541,9 @@ fun folderTint(hex: String): Color =
 fun FolderItem(
     folder: FolderEntity,
     fileCount: Int,
-    onFolderClick: () -> Unit
+    onFolderClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val tint = folderTint(folder.color)
 
@@ -473,6 +596,24 @@ fun FolderItem(
                 )
             }
 
+            IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    Icons.Filled.Edit,
+                    contentDescription = "تعديل المجلد",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    Icons.Filled.DeleteOutline,
+                    contentDescription = "حذف المجلد",
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
             Icon(
                 Icons.Filled.ChevronLeft,
                 contentDescription = "فتح",
@@ -490,7 +631,8 @@ fun FolderItem(
 fun FileItem(
     file: FileEntity,
     onFileClick: () -> Unit,
-    onFavoriteToggle: () -> Unit
+    onFavoriteToggle: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val fileColor = getFileColor(file.type)
     val fileIcon = getFileIcon(file.type)
@@ -560,6 +702,16 @@ fun FileItem(
                     contentDescription = "مفضلة",
                     tint = if (file.isFavorite) Warning else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier.size(22.dp)
+                )
+            }
+
+            // Delete button
+            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    Icons.Filled.DeleteOutline,
+                    contentDescription = "حذف الملف",
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

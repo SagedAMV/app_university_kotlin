@@ -16,7 +16,7 @@ import com.unimanager.app.data.entity.*
         NoteEntity::class,
         ExamEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -57,6 +57,53 @@ abstract class AppDatabase : RoomDatabase() {
                 // Lectures indices
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_lectures_day ON lectures(day)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_lectures_timeFrom ON lectures(timeFrom)")
+            }
+        }
+
+        // Migration 3 → 4: إضافة مفتاح أجنبي بين files.folderId و folders.id (CASCADE)
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // الملفات اليتيمة (مجلدها محذوف سابقًا بدون FK) تُعاد للجذر أولًا
+                db.execSQL(
+                    "UPDATE files SET folderId = NULL " +
+                        "WHERE folderId IS NOT NULL " +
+                        "AND folderId NOT IN (SELECT id FROM folders)"
+                )
+
+                // إعادة بناء جدول الملفات مع قيد المفتاح الأجنبي (SQLite لا يدعم إضافة FK مباشرة)
+                db.execSQL(
+                    """
+                    CREATE TABLE files_new (
+                        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        extension TEXT NOT NULL,
+                        type TEXT NOT NULL,
+                        mimeType TEXT NOT NULL,
+                        size INTEGER NOT NULL,
+                        folderId INTEGER,
+                        filePath TEXT NOT NULL,
+                        isFavorite INTEGER NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        FOREIGN KEY(folderId) REFERENCES folders(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO files_new
+                        (id, name, extension, type, mimeType, size, folderId, filePath, isFavorite, createdAt)
+                    SELECT id, name, extension, type, mimeType, size, folderId, filePath, isFavorite, createdAt
+                    FROM files
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE files")
+                db.execSQL("ALTER TABLE files_new RENAME TO files")
+
+                // إعادة إنشاء فهارس الملفات بنفس الأسماء التي يولّدها Room
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_files_name ON files(name)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_files_folderId ON files(folderId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_files_createdAt ON files(createdAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_files_isFavorite ON files(isFavorite)")
             }
         }
     }

@@ -7,7 +7,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -15,62 +16,55 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /**
- * Swipeable Item مع دعم Undo
- * يدعم السحب من اليمين لليسار للحذف (RTL)
- * مع إمكانية التراجع
+ * عنصر قابل للسحب من اليمين لليسار (RTL) لكشف زر الحذف.
+ *
+ * السحب لا يحذف مباشرة: يستدعي [onSwipe] فقط ثم يعود العنصر لمكانه،
+ * ليترك للشاشة الأم قرار الحذف عبر حوار تأكيد (شبكة أمان ضد الضغط الخاطئ).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwipeableItem(
     onSwipe: () -> Unit,
-    onUndo: ((onRestore: () -> Unit) -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
-    var isDismissed by remember { mutableStateOf(false) }
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
-    val dismissState = rememberDismissState(
+    val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
-            if (dismissValue == DismissValue.DismissedToStart) {
-                isDismissed = true
+            if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
                 onSwipe()
-                true
-            } else {
-                false
             }
+            // نعيد دائمًا false حتى لا يُزال العنصر دون تأكيد
+            false
         }
     )
 
-    if (isDismissed) return
+    val alpha by animateFloatAsState(
+        targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.Settled) 0f else 1f,
+        label = "swipeAlpha"
+    )
 
-    SwipeToDismiss(
+    SwipeToDismissBox(
         state = dismissState,
-        directions = setOf(DismissDirection.EndToStart),
-        background = {
-            val color = Color(0xFFEF4444)
-            val alpha by animateFloatAsState(
-                targetValue = if (dismissState.targetValue == DismissValue.Default) 0f else 1f,
-                label = "alpha"
-            )
-
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(color.copy(alpha = alpha * 0.2f)),
+                    .background(Color(0xFFEF4444).copy(alpha = alpha * 0.2f)),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(
                     Icons.Filled.Delete,
                     contentDescription = "حذف",
-                    tint = color,
+                    tint = Color(0xFFEF4444),
                     modifier = Modifier
                         .padding(end = 20.dp)
                         .size(24.dp)
                 )
             }
-        },
-        dismissContent = { content() }
-    )
+        }
+    ) {
+        content()
+    }
 }

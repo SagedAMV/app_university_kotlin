@@ -54,11 +54,9 @@ class NotificationWorker(
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
 
-            // استخدام الأولوية المناسبة للقناة
+            // استخدام الأولوية المناسبة للقناة (القنوات المُنشأة فعلًا: exams, tasks)
             val priority = when (channel) {
                 "exams" -> NotificationCompat.PRIORITY_HIGH
-                "tasks" -> NotificationCompat.PRIORITY_DEFAULT
-                "backup" -> NotificationCompat.PRIORITY_LOW
                 else -> NotificationCompat.PRIORITY_DEFAULT
             }
 

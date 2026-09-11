@@ -116,6 +116,21 @@ class AppViewModel @Inject constructor(
     fun deleteFolder(folder: FolderEntity) {
         viewModelScope.launch {
             try {
+                // احسب شجرة المجلدات الفرعية قبل الحذف لحذف الملفات الفعلية أيضًا
+                // (قاعدة البيانات تحذف الصفوف عبر CASCADE لكنها لا تحذف ملفات التخزين)
+                val allFolders = repository.getAllFoldersOnce()
+                val subtreeIds = mutableSetOf(folder.id)
+                var grew = true
+                while (grew) {
+                    grew = false
+                    for (f in allFolders) {
+                        if (f.parentId in subtreeIds && subtreeIds.add(f.id)) grew = true
+                    }
+                }
+                repository.getAllFilesOnce()
+                    .filter { it.folderId in subtreeIds }
+                    .forEach { deletePhysicalFile(it.filePath) }
+
                 repository.deleteFolder(folder)
             } catch (e: Exception) {
                 _errorMessage.value = "فشل حذف المجلد"
@@ -158,11 +173,19 @@ class AppViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.deleteFile(file)
+                // احذف النسخة الفعلية المنسوخة داخل تخزين التطبيق لمنع تسرّب المساحة
+                deletePhysicalFile(file.filePath)
             } catch (e: Exception) {
                 _errorMessage.value = "فشل حذف الملف"
                 android.util.Log.e("AppViewModel", "Failed to delete file", e)
             }
         }
+    }
+
+    /** حذف ملف فعلي من التخزين الداخلي بصمت (فشله لا يُفشل حذف السجل) */
+    private fun deletePhysicalFile(path: String) {
+        if (path.isBlank()) return
+        runCatching { java.io.File(path).takeIf { it.isFile }?.delete() }
     }
 
     fun toggleFavorite(id: Long, isFavorite: Boolean) {

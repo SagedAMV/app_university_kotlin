@@ -19,6 +19,7 @@ class AppRepository @Inject constructor(
     // Folders
     fun getRootFolders(): Flow<List<FolderEntity>> = folderDao.getRootFolders()
     fun getChildFolders(parentId: Long?): Flow<List<FolderEntity>> = folderDao.getChildFolders(parentId)
+    suspend fun getAllFoldersOnce(): List<FolderEntity> = folderDao.getAllFoldersSync()
     suspend fun insertFolder(folder: FolderEntity): Long = folderDao.insert(folder)
     suspend fun updateFolder(folder: FolderEntity) = folderDao.update(folder)
     suspend fun deleteFolder(folder: FolderEntity) = folderDao.delete(folder)
@@ -26,6 +27,7 @@ class AppRepository @Inject constructor(
     // Files
     fun getAllFiles(): Flow<List<FileEntity>> = fileDao.getAllFiles()
     fun getFilesInFolder(folderId: Long?): Flow<List<FileEntity>> = fileDao.getFilesInFolder(folderId)
+    suspend fun getAllFilesOnce(): List<FileEntity> = fileDao.getAllFilesSync()
     fun getFavoriteFiles(): Flow<List<FileEntity>> = fileDao.getFavoriteFiles()
     suspend fun insertFile(file: FileEntity): Long = fileDao.insert(file)
     suspend fun updateFile(file: FileEntity) = fileDao.update(file)

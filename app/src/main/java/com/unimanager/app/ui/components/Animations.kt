@@ -40,32 +40,3 @@ fun AnimatedEntrance(
         content()
     }
 }
-
-/**
- * Slide up entrance animation
- * يُستخدم لإظهار عناصر القوائم
- */
-@Composable
-fun SlideUpEntrance(
-    visible: Boolean,
-    modifier: Modifier = Modifier,
-    delayMillis: Int = 0,
-    content: @Composable () -> Unit
-) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(
-            animationSpec = tween(durationMillis = 400, delayMillis = delayMillis)
-        ) + slideInVertically(
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioNoBouncy,
-                stiffness = Spring.StiffnessMedium
-            ),
-            initialOffsetY = { it / 3 }
-        ),
-        exit = fadeOut(tween(200)) + slideOutVertically(tween(200), targetOffsetY = { it / 3 }),
-        modifier = modifier
-    ) {
-        content()
-    }
-}

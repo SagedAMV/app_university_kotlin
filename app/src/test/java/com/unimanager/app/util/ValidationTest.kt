@@ -29,18 +29,6 @@ class ValidationTest {
     }
 
     @Test
-    fun `validateEmail with valid email returns success`() {
-        val result = Validation.validateEmail("test@example.com")
-        assertTrue(result.isSuccess)
-    }
-
-    @Test
-    fun `validateEmail with invalid email returns failure`() {
-        val result = Validation.validateEmail("invalid-email")
-        assertTrue(result.isFailure)
-    }
-
-    @Test
     fun `validateDate with valid date returns success`() {
         val result = Validation.validateDate("2026-01-15")
         assertTrue(result.isSuccess)

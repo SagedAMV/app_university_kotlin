@@ -169,7 +169,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                         title = "محاضرات اليوم",
                         subtitle = "$lectureCount محاضرة مجدولة",
                         color = Primary,
-                        onClick = { navController.navigate(Routes.Unified.route) }
+                        onClick = { navController.navigate(Routes.Unified.tab(1)) }
                     )
                 }
             }
@@ -196,7 +196,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                             label = "المهام",
                             color = Secondary,
                             modifier = Modifier.weight(1f)
-                        ) { navController.navigate(Routes.Unified.route) }
+                        ) { navController.navigate(Routes.Unified.tab(0)) }
                     }
                 }
             }
@@ -209,7 +209,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                             label = "ملاحظاتي",
                             color = Info,
                             modifier = Modifier.weight(1f)
-                        ) { navController.navigate(Routes.Unified.route) }
+                        ) { navController.navigate(Routes.Unified.tab(2)) }
 
                         QuickAction(
                             icon = Icons.Filled.Star,

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Main Theme -->
+    <!-- Main Theme (يُطبَّق بعد شاشة البداية عبر postSplashScreenTheme) -->
     <style name="Theme.UniManager" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:colorPrimary">#6366F1</item>
         <item name="android:colorPrimaryDark">#4F46E5</item>
@@ -9,12 +9,9 @@
         <item name="android:navigationBarColor">#6366F1</item>
     </style>
 
-    <!-- Splash Screen Theme -->
-    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#6366F1</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_round</item>
-        <item name="postSplashScreenTheme">@style/Theme.UniManager</item>
-        <item name="android:statusBarColor">#6366F1</item>
-        <item name="android:navigationBarColor">#6366F1</item>
-    </style>
+    <!--
+      تعريف Theme.App.Starting موجود حصريًا في splash_theme.xml.
+      تكراره هنا كان يسبب فشل دمج الموارد AAPT2
+      (resource style/Theme.App.Starting is already defined).
+    -->
 </resources>

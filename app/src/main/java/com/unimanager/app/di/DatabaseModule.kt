@@ -19,8 +19,9 @@ object DatabaseModule {
 
     /**
      * المصدر الوحيد لقاعدة البيانات عبر التطبيق كله (بما فيه BackupHelper).
-     * الـ Migrations المعرّفة في AppDatabase مفعّلة هنا في مسار الإنتاج،
-     * لذلك لا تُحذف بيانات المستخدم عند الترقية.
+     * كل الترقيات مغطّاة بهجرات صريحة تحفظ بيانات المستخدم.
+     * لا نستخدم fallbackToDestructiveMigration في الإنتاج حتى لا تُحذف بيانات
+     * المستخدم المحلية بصمت عند نسيان كتابة هجرة لأي إصدار جديد.
      */
     @Provides
     @Singleton
@@ -30,8 +31,11 @@ object DatabaseModule {
             AppDatabase::class.java,
             "uni_manager_db"
         )
-            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
-            .fallbackToDestructiveMigration()
+            .addMigrations(
+                AppDatabase.MIGRATION_1_2,
+                AppDatabase.MIGRATION_2_3,
+                AppDatabase.MIGRATION_3_4
+            )
             .build()
     }
 

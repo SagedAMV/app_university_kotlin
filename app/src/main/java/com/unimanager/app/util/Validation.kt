@@ -44,18 +44,6 @@ object Validation {
     }
 
     /**
-     * Validate email format
-     */
-    fun validateEmail(email: String): Result<String> {
-        return when {
-            email.isBlank() -> Result.failure(Exception("البريد الإلكتروني مطلوب"))
-            !email.matches(Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+$")) ->
-                Result.failure(Exception("بريد إلكتروني غير صالح"))
-            else -> Result.success(email.trim())
-        }
-    }
-
-    /**
      * Validate date format (YYYY-MM-DD)
      */
     fun validateDate(date: String): Result<String> {

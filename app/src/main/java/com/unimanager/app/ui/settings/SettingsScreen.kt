@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.os.Build
 import com.unimanager.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,7 +24,9 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onBackupClick: () -> Unit,
     isDarkTheme: Boolean,
-    onThemeChange: (Boolean) -> Unit
+    onThemeChange: (Boolean) -> Unit,
+    useDynamicColor: Boolean = false,
+    onDynamicColorChange: (Boolean) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -59,6 +62,16 @@ fun SettingsScreen(
                     isChecked = isDarkTheme,
                     onCheckedChange = onThemeChange
                 )
+                // Dynamic Color متاح فقط على Android 12+ (API 31)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    ThemeToggleItem(
+                        icon = Icons.Filled.Palette,
+                        title = "الألوان الديناميكية",
+                        subtitle = if (useDynamicColor) "مطابقة لألوان النظام" else "معطّل",
+                        isChecked = useDynamicColor,
+                        onCheckedChange = onDynamicColorChange
+                    )
+                }
             }
 
             // Backup section

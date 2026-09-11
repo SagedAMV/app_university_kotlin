@@ -17,7 +17,16 @@ object Routes {
         fun folder(folderId: Long?): String =
             if (folderId == null) route else "files?$FOLDER_ID_ARG=$folderId"
     }
-    object Unified { const val route = "unified" }
+    object Unified {
+        const val route = "unified"
+        const val TAB_ARG = "tab"
+
+        /** النمط الكامل مع وسيط اختياري لرقم التبويب الابتدائي */
+        const val pattern = "unified?$TAB_ARG={$TAB_ARG}"
+
+        /** مسار فتح شاشة الأقسام على تبويب محدد (0 مهام، 1 جدول، 2 ملاحظات، 3 امتحانات) */
+        fun tab(index: Int): String = "unified?$TAB_ARG=$index"
+    }
     object Galaxy { const val route = "galaxy" }
     object Settings { const val route = "settings" }
     object Backup { const val route = "backup" }

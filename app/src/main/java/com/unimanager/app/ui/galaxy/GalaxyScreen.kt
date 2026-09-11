@@ -1,5 +1,11 @@
 package com.unimanager.app.ui.galaxy
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,6 +45,19 @@ fun GalaxyScreen(viewModel: AppViewModel, navController: NavController) {
 
     var offset by remember { mutableStateOf(Offset.Zero) }
     var scale by remember { mutableStateOf(1f) }
+
+    // نبض مستمر تقوده حلقة رسوم Compose (قراءة هذه الحالة داخل DrawScope
+    // تُعيد رسم الـCanvas كل إطار — على عكس System.currentTimeMillis الثابت)
+    val infiniteTransition = rememberInfiniteTransition(label = "galaxyPulse")
+    val pulsePhase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2f * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "pulsePhase"
+    )
 
     Scaffold(
         topBar = {
@@ -127,8 +146,8 @@ fun GalaxyScreen(viewModel: AppViewModel, navController: NavController) {
                         center = Offset(x, y)
                     )
 
-                    // Draw pulse effect
-                    val pulseAlpha = ((sin(System.currentTimeMillis() / 500.0 + index) + 1) / 4).toFloat()
+                    // Draw pulse effect (نبض حي تقوده حلقة الرسوم)
+                    val pulseAlpha = ((sin(pulsePhase + index) + 1f) / 4f)
                     drawCircle(
                         color = Color(0xFF6366F1).copy(alpha = pulseAlpha),
                         radius = 35f * scale,

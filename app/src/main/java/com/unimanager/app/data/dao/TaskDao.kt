@@ -9,6 +9,12 @@ interface TaskDao {
     @Query("SELECT * FROM tasks ORDER BY CASE WHEN isDone = 1 THEN 1 ELSE 0 END, CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END, dueDate ASC")
     fun getAllTasks(): Flow<List<TaskEntity>>
 
+    /**
+     * لقطة فورية لمرة واحدة (suspend) للنسخ الاحتياطي.
+     * الترتيب هنا حسب [TaskEntity.createdAt] تنازليًا — يختلف عن [getAllTasks]
+     * الذي يراعي الإنجاز والأولوية وموعد الاستحقاق لأنه مخصص للواجهة.
+     * لا تستخدم هذا الاستعلام لبناء قوائم الواجهة.
+     */
     @Query("SELECT * FROM tasks ORDER BY createdAt DESC")
     suspend fun getAllTasksSync(): List<TaskEntity>
 
