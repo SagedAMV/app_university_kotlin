@@ -16,7 +16,6 @@ interface TaskDao {
     fun getPendingTasks(): Flow<List<TaskEntity>>
 
     @Query("SELECT * FROM tasks WHERE id = :id")
-    fun getTaskById(id: Long): Flow<TaskEntity?>
 
     @Insert
     suspend fun insert(task: TaskEntity): Long
@@ -31,7 +30,6 @@ interface TaskDao {
     suspend fun delete(task: TaskEntity)
 
     @Query("DELETE FROM tasks WHERE id = :id")
-    suspend fun deleteById(id: Long)
 
     @Query("DELETE FROM tasks")
     suspend fun deleteAll()

@@ -5,7 +5,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.unimanager.app.data.entity.*
 import com.unimanager.app.data.repository.AppRepository
-import com.unimanager.app.ui.components.UiState
 import com.unimanager.app.util.ExamNotificationScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -23,17 +22,11 @@ class AppViewModel @Inject constructor(
     // ====== Data Flows (StateFlow for performance) ======
 
     // Folders
-    val allFolders: StateFlow<List<FolderEntity>> = repository.getAllFolders()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     val rootFolders: StateFlow<List<FolderEntity>> = repository.getRootFolders()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Files
     val allFiles: StateFlow<List<FileEntity>> = repository.getAllFiles()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val favoriteFiles: StateFlow<List<FileEntity>> = repository.getFavoriteFiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val fileCount: StateFlow<Int> = repository.getFileCount()
@@ -75,9 +68,6 @@ class AppViewModel @Inject constructor(
 
     // ====== UI State for Error Handling ======
 
-    private val _uiState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
-    val uiState: StateFlow<UiState<Unit>> = _uiState.asStateFlow()
-
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
@@ -85,7 +75,7 @@ class AppViewModel @Inject constructor(
     val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
 
     // ====== Search ======
-    fun searchFiles(query: String): Flow<List<FileEntity>> = repository.searchFiles(query)
+    // (search is done in-memory via filter on StateFlow values)
 
     // ====== Folder Operations ======
     fun getChildFolders(parentId: Long?): StateFlow<List<FolderEntity>> =
@@ -94,12 +84,9 @@ class AppViewModel @Inject constructor(
     fun insertFolder(folder: FolderEntity) {
         viewModelScope.launch {
             try {
-                _uiState.value = UiState.Loading
                 repository.insertFolder(folder)
-                _uiState.value = UiState.Success(Unit)
                 _successMessage.value = "تم إضافة المجلد بنجاح"
             } catch (e: Exception) {
-                _uiState.value = UiState.Error("فشل إضافة المجلد", e)
                 _errorMessage.value = "فشل إضافة المجلد: ${e.message}"
                 android.util.Log.e("AppViewModel", "Failed to insert folder", e)
             }
@@ -135,12 +122,9 @@ class AppViewModel @Inject constructor(
     fun insertFile(file: FileEntity) {
         viewModelScope.launch {
             try {
-                _uiState.value = UiState.Loading
                 repository.insertFile(file)
-                _uiState.value = UiState.Success(Unit)
                 _successMessage.value = "تم إضافة الملف بنجاح"
             } catch (e: Exception) {
-                _uiState.value = UiState.Error("فشل إضافة الملف", e)
                 _errorMessage.value = "فشل إضافة الملف: ${e.message}"
                 android.util.Log.e("AppViewModel", "Failed to insert file", e)
             }
@@ -187,12 +171,9 @@ class AppViewModel @Inject constructor(
     fun insertLecture(lecture: LectureEntity) {
         viewModelScope.launch {
             try {
-                _uiState.value = UiState.Loading
                 repository.insertLecture(lecture)
-                _uiState.value = UiState.Success(Unit)
                 _successMessage.value = "تم إضافة المحاضرة بنجاح"
             } catch (e: Exception) {
-                _uiState.value = UiState.Error("فشل إضافة المحاضرة", e)
                 _errorMessage.value = "فشل إضافة المحاضرة: ${e.message}"
                 android.util.Log.e("AppViewModel", "Failed to insert lecture", e)
             }
@@ -225,9 +206,7 @@ class AppViewModel @Inject constructor(
     fun insertTask(task: TaskEntity) {
         viewModelScope.launch {
             try {
-                _uiState.value = UiState.Loading
                 repository.insertTask(task)
-                _uiState.value = UiState.Success(Unit)
                 _successMessage.value = "تم إضافة المهمة بنجاح"
 
                 // جدولة الإشعارات
@@ -235,7 +214,6 @@ class AppViewModel @Inject constructor(
                     notificationScheduler.scheduleTaskNotification(task)
                 }
             } catch (e: Exception) {
-                _uiState.value = UiState.Error("فشل إضافة المهمة", e)
                 _errorMessage.value = "فشل إضافة المهمة: ${e.message}"
                 android.util.Log.e("AppViewModel", "Failed to insert task", e)
             }
@@ -280,12 +258,9 @@ class AppViewModel @Inject constructor(
     fun insertNote(note: NoteEntity) {
         viewModelScope.launch {
             try {
-                _uiState.value = UiState.Loading
                 repository.insertNote(note)
-                _uiState.value = UiState.Success(Unit)
                 _successMessage.value = "تم إضافة الملاحظة بنجاح"
             } catch (e: Exception) {
-                _uiState.value = UiState.Error("فشل إضافة الملاحظة", e)
                 _errorMessage.value = "فشل إضافة الملاحظة: ${e.message}"
                 android.util.Log.e("AppViewModel", "Failed to insert note", e)
             }
@@ -318,15 +293,12 @@ class AppViewModel @Inject constructor(
     fun insertExam(exam: ExamEntity) {
         viewModelScope.launch {
             try {
-                _uiState.value = UiState.Loading
                 repository.insertExam(exam)
-                _uiState.value = UiState.Success(Unit)
                 _successMessage.value = "تم إضافة الامتحان بنجاح"
 
                 // جدولة الإشعارات
                 notificationScheduler.scheduleExamNotification(exam)
             } catch (e: Exception) {
-                _uiState.value = UiState.Error("فشل إضافة الامتحان", e)
                 _errorMessage.value = "فشل إضافة الامتحان: ${e.message}"
                 android.util.Log.e("AppViewModel", "Failed to insert exam", e)
             }
@@ -362,17 +334,4 @@ class AppViewModel @Inject constructor(
         _successMessage.value = null
     }
 
-    // ====== Dashboard Data ======
-    data class DashboardData(
-        val fileCount: Int = 0,
-        val folderCount: Int = 0,
-        val lectureCount: Int = 0,
-        val pendingTasks: Int = 0,
-        val upcomingExams: Int = 0,
-        val totalSize: Long = 0,
-        val todayLectures: List<LectureEntity> = emptyList(),
-        val recentFiles: List<FileEntity> = emptyList(),
-        val upcomingExamList: List<ExamEntity> = emptyList(),
-        val urgentTasks: List<TaskEntity> = emptyList()
-    )
 }

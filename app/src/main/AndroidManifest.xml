@@ -16,13 +16,6 @@
     <!-- Notification Permission (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Foreground Service for Backup -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-
-    <!-- Exact Alarms for Precise Notifications -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-
     <application
         android:name=".UniApplication"
         android:allowBackup="false"
@@ -45,12 +38,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Backup Service -->
-        <service
-            android:name=".backup.BackupService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
 
         <!-- File Provider for opening files -->
         <provider

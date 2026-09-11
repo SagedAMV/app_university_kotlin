@@ -16,7 +16,6 @@ interface ExamDao {
     fun getUpcomingExams(): Flow<List<ExamEntity>>
 
     @Query("SELECT * FROM exams WHERE id = :id")
-    fun getExamById(id: Long): Flow<ExamEntity?>
 
     @Insert
     suspend fun insert(exam: ExamEntity): Long
@@ -31,7 +30,6 @@ interface ExamDao {
     suspend fun delete(exam: ExamEntity)
 
     @Query("DELETE FROM exams WHERE id = :id")
-    suspend fun deleteById(id: Long)
 
     @Query("DELETE FROM exams")
     suspend fun deleteAll()

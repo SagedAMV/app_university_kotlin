@@ -245,7 +245,7 @@ fun TasksTab(viewModel: AppViewModel, searchQuery: String) {
     if (filteredTasks.isEmpty()) {
         if (searchQuery.isNotBlank()) {
             EmptyStateEnhanced(
-                icon = "",
+                icon = "🔍",
                 title = "لا توجد نتائج",
                 subtitle = "جرب كلمات أخرى",
                 actionText = "مسح البحث",
@@ -294,7 +294,7 @@ fun ScheduleTab(viewModel: AppViewModel, searchQuery: String) {
 
     if (filteredLectures.isEmpty()) {
         EmptyStateEnhanced(
-            icon = "",
+            icon = "🔍",
             title = if (searchQuery.isNotBlank()) "لا توجد نتائج" else "لا توجد محاضرات",
             subtitle = if (searchQuery.isNotBlank()) "جرب كلمات أخرى" else "اضغط + لإضافة محاضرة",
             actionText = if (searchQuery.isBlank()) "إضافة محاضرة" else null,
@@ -378,7 +378,7 @@ fun ExamsTab(viewModel: AppViewModel, searchQuery: String) {
 
     if (filteredExams.isEmpty()) {
         EmptyStateEnhanced(
-            icon = "",
+            icon = "🔍",
             title = if (searchQuery.isNotBlank()) "لا توجد نتائج" else "لا توجد امتحانات",
             subtitle = if (searchQuery.isNotBlank()) "جرب كلمات أخرى" else "اضغط + لإضافة امتحان",
             actionText = if (searchQuery.isBlank()) "إضافة امتحان" else null,

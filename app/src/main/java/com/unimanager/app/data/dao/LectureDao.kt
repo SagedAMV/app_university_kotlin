@@ -16,7 +16,6 @@ interface LectureDao {
     fun getLecturesByDay(day: String): Flow<List<LectureEntity>>
 
     @Query("SELECT * FROM lectures WHERE id = :id")
-    fun getLectureById(id: Long): Flow<LectureEntity?>
 
     @Insert
     suspend fun insert(lecture: LectureEntity): Long
@@ -31,7 +30,6 @@ interface LectureDao {
     suspend fun delete(lecture: LectureEntity)
 
     @Query("DELETE FROM lectures WHERE id = :id")
-    suspend fun deleteById(id: Long)
 
     @Query("DELETE FROM lectures")
     suspend fun deleteAll()

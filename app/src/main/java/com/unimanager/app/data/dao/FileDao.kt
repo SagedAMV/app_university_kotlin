@@ -19,7 +19,6 @@ interface FileDao {
     fun getFavoriteFiles(): Flow<List<FileEntity>>
 
     @Query("SELECT * FROM files WHERE id = :id")
-    fun getFileById(id: Long): Flow<FileEntity?>
 
     @Query("SELECT * FROM files WHERE name LIKE '%' || :query || '%' OR extension LIKE '%' || :query || '%'")
     fun searchFiles(query: String): Flow<List<FileEntity>>
@@ -37,7 +36,6 @@ interface FileDao {
     suspend fun delete(file: FileEntity)
 
     @Query("DELETE FROM files WHERE id = :id")
-    suspend fun deleteById(id: Long)
 
     @Query("DELETE FROM files")
     suspend fun deleteAll()

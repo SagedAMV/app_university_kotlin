@@ -32,22 +32,6 @@ class UniApplication : Application() {
                 ).apply {
                     description = "إشعارات المهام"
                     enableVibration(false)
-                },
-                NotificationChannel(
-                    "backup",
-                    "النسخ الاحتياطي",
-                    NotificationManager.IMPORTANCE_LOW
-                ).apply {
-                    description = "إشعارات النسخ الاحتياطي"
-                    enableVibration(false)
-                },
-                NotificationChannel(
-                    "general",
-                    "عام",
-                    NotificationManager.IMPORTANCE_DEFAULT
-                ).apply {
-                    description = "إشعارات عامة"
-                    enableVibration(false)
                 }
             )
 

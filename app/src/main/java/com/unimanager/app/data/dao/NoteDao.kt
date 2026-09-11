@@ -13,7 +13,6 @@ interface NoteDao {
     suspend fun getAllNotesSync(): List<NoteEntity>
 
     @Query("SELECT * FROM notes WHERE id = :id")
-    fun getNoteById(id: Long): Flow<NoteEntity?>
 
     @Insert
     suspend fun insert(note: NoteEntity): Long
@@ -28,7 +27,6 @@ interface NoteDao {
     suspend fun delete(note: NoteEntity)
 
     @Query("DELETE FROM notes WHERE id = :id")
-    suspend fun deleteById(id: Long)
 
     @Query("DELETE FROM notes")
     suspend fun deleteAll()
