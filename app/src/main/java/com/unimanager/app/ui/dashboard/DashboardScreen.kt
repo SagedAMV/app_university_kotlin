@@ -31,18 +31,43 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
-    val fileCount by viewModel.fileCount.collectAsState(initial = 0)
-    val lectureCount by viewModel.lectureCount.collectAsState(initial = 0)
-    val pendingTasks by viewModel.pendingTaskCount.collectAsState(initial = 0)
-    val upcomingExams by viewModel.upcomingExamCount.collectAsState(initial = 0)
-    val totalSize by viewModel.totalSize.collectAsState(initial = 0L)
+    val fileCount by viewModel.fileCount.collectAsState()
+    val lectureCount by viewModel.lectureCount.collectAsState()
+    val pendingTasks by viewModel.pendingTaskCount.collectAsState()
+    val upcomingExams by viewModel.upcomingExamCount.collectAsState()
+    val totalSize by viewModel.totalSize.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Show error messages
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { msg ->
+            snackbarHostState.showSnackbar(
+                message = msg,
+                duration = SnackbarDuration.Short
+            )
+            viewModel.clearMessages()
+        }
+    }
+
+    // Show success messages
+    LaunchedEffect(successMessage) {
+        successMessage?.let { msg ->
+            snackbarHostState.showSnackbar(
+                message = msg,
+                duration = SnackbarDuration.Short
+            )
+            viewModel.clearMessages()
+        }
+    }
 
     var screenVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { screenVisible = true }
 
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -73,7 +98,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Welcome Card with gradient
+            // Welcome Card
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 0) {
                     WelcomeCard()
@@ -83,24 +108,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
             // Overview title
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 100) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .height(24.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(Primary)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "نظرة عامة",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    SectionTitle("نظرة عامة", color = Primary)
                 }
             }
 
@@ -148,11 +156,11 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                 }
             }
 
-            // Hero Card - Lectures
+            // Hero Card
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 350) {
                     HeroBentoCard(
-                        icon = "📅",
+                        icon = "",
                         title = "محاضرات اليوم",
                         subtitle = "$lectureCount محاضرة مجدولة",
                         color = Primary,
@@ -164,26 +172,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
             // Quick Actions
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 450) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .height(24.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(Warning)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "إجراءات سريعة",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.weight(1f))
-                        Text("⚡", fontSize = 20.sp)
-                    }
+                    SectionTitle("إجراءات سريعة", color = Warning, icon = "⚡")
                 }
             }
 
@@ -230,31 +219,14 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
             // Recent Activity
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 700) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .height(24.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(Info)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "النشاط الأخير",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    SectionTitle("النشاط الأخير", color = Info)
                 }
             }
 
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 750) {
                     ActivityCard(
-                        icon = "📥",
+                        icon = "",
                         title = "تم رفع ملف جديد",
                         time = "منذ 5 دقائق",
                         color = Primary
@@ -262,6 +234,28 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SectionTitle(title: String, color: Color, icon: String? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(24.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(color)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            if (icon != null) "$icon $title" else title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -289,7 +283,6 @@ private fun WelcomeCard() {
                     brush = Brush.linearGradient(colors = colors)
                 )
         ) {
-            // Decorative circles
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -314,7 +307,7 @@ private fun WelcomeCard() {
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    "📚 مرحباً بك",
+                    " مرحباً بك",
                     style = MaterialTheme.typography.headlineMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Bold

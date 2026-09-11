@@ -27,14 +27,14 @@ import com.unimanager.app.data.entity.ExamEntity
 import com.unimanager.app.data.entity.LectureEntity
 import com.unimanager.app.data.entity.NoteEntity
 import com.unimanager.app.data.entity.TaskEntity
-import com.unimanager.app.ui.components.SlideUpEntrance
+import com.unimanager.app.ui.components.*
 import com.unimanager.app.ui.theme.*
-import com.unimanager.app.viewmodel.AppViewModel
+import com.unimanager.app.viewmodel.*
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UnifiedScreen(viewModel: AppViewModel) {
+fun UnifiedScreen(appViewModel: AppViewModel) {
     var selectedTab by remember { mutableStateOf(0) }
     var showAddDialog by remember { mutableStateOf(false) }
     var screenVisible by remember { mutableStateOf(false) }
@@ -109,10 +109,10 @@ fun UnifiedScreen(viewModel: AppViewModel) {
 
             // Tab content
             when (selectedTab) {
-                0 -> TasksTab(viewModel = viewModel, showAddDialog = showAddDialog)
-                1 -> ScheduleTab(viewModel = viewModel, showAddDialog = showAddDialog)
-                2 -> NotesTab(viewModel = viewModel, showAddDialog = showAddDialog)
-                3 -> ExamsTab(viewModel = viewModel, showAddDialog = showAddDialog)
+                0 -> TasksTab(appViewModel = appViewModel)
+                1 -> ScheduleTab(appViewModel = appViewModel)
+                2 -> NotesTab(appViewModel = appViewModel)
+                3 -> ExamsTab(appViewModel = appViewModel)
             }
         }
     }
@@ -123,14 +123,14 @@ fun UnifiedScreen(viewModel: AppViewModel) {
             0 -> AddTaskDialog(
                 onDismiss = { showAddDialog = false },
                 onAdd = { title, desc, priority ->
-                    viewModel.insertTask(TaskEntity(title = title, description = desc, priority = priority))
+                    appViewModel.insertTask(TaskEntity(title = title, description = desc, priority = priority))
                     showAddDialog = false
                 }
             )
             1 -> AddLectureDialog(
                 onDismiss = { showAddDialog = false },
                 onAdd = { subject, doctor, day, timeFrom, timeTo, room ->
-                    viewModel.insertLecture(LectureEntity(
+                    appViewModel.insertLecture(LectureEntity(
                         subject = subject,
                         doctor = doctor,
                         day = day,
@@ -144,14 +144,14 @@ fun UnifiedScreen(viewModel: AppViewModel) {
             2 -> AddNoteDialog(
                 onDismiss = { showAddDialog = false },
                 onAdd = { title, content ->
-                    viewModel.insertNote(NoteEntity(title = title, content = content))
+                    appViewModel.insertNote(NoteEntity(title = title, content = content))
                     showAddDialog = false
                 }
             )
             3 -> AddExamDialog(
                 onDismiss = { showAddDialog = false },
                 onAdd = { subject, type, date, time, room ->
-                    viewModel.insertExam(ExamEntity(
+                    appViewModel.insertExam(ExamEntity(
                         subject = subject,
                         type = type,
                         examDate = date,
@@ -219,11 +219,17 @@ fun TabButton(
 }
 
 @Composable
-fun TasksTab(viewModel: AppViewModel, showAddDialog: Boolean) {
-    val tasks by viewModel.allTasks.collectAsState(initial = emptyList())
+fun TasksTab(appViewModel: AppViewModel) {
+    val tasks by appViewModel.allTasks.collectAsState()
 
     if (tasks.isEmpty()) {
-        EmptyState("✅", "لا توجد مهام", "اضغط + لإضافة مهمة")
+        EmptyStateEnhanced(
+            icon = "✅",
+            title = "لا توجد مهام",
+            subtitle = "اضغط + لإضافة مهمة",
+            actionText = "إضافة مهمة",
+            onActionClick = { /* TODO */ }
+        )
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -233,8 +239,8 @@ fun TasksTab(viewModel: AppViewModel, showAddDialog: Boolean) {
             items(tasks, key = { it.id }) { task ->
                 TaskItem(
                     task = task,
-                    onToggle = { viewModel.toggleTaskDone(task.id, !task.isDone) },
-                    onDelete = { viewModel.deleteTask(task) }
+                    onToggle = { appViewModel.toggleTaskDone(task.id, !task.isDone) },
+                    onDelete = { appViewModel.deleteTask(task) }
                 )
             }
         }
@@ -242,12 +248,18 @@ fun TasksTab(viewModel: AppViewModel, showAddDialog: Boolean) {
 }
 
 @Composable
-fun ScheduleTab(viewModel: AppViewModel, showAddDialog: Boolean) {
-    val lectures by viewModel.allLectures.collectAsState(initial = emptyList())
+fun ScheduleTab(appViewModel: AppViewModel) {
+    val lectures by appViewModel.allLectures.collectAsState()
     val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة")
 
     if (lectures.isEmpty()) {
-        EmptyState("", "لا توجد محاضرات", "اضغط + لإضافة محاضرة")
+        EmptyStateEnhanced(
+            icon = "",
+            title = "لا توجد محاضرات",
+            subtitle = "اضغط + لإضافة محاضرة",
+            actionText = "إضافة محاضرة",
+            onActionClick = { /* TODO */ }
+        )
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -268,7 +280,7 @@ fun ScheduleTab(viewModel: AppViewModel, showAddDialog: Boolean) {
                     items(dayLectures) { lecture ->
                         LectureItem(
                             lecture = lecture,
-                            onDelete = { viewModel.deleteLecture(lecture) }
+                            onDelete = { appViewModel.deleteLecture(lecture) }
                         )
                     }
                 }
@@ -278,11 +290,17 @@ fun ScheduleTab(viewModel: AppViewModel, showAddDialog: Boolean) {
 }
 
 @Composable
-fun NotesTab(viewModel: AppViewModel, showAddDialog: Boolean) {
-    val notes by viewModel.allNotes.collectAsState(initial = emptyList())
+fun NotesTab(appViewModel: AppViewModel) {
+    val notes by appViewModel.allNotes.collectAsState()
 
     if (notes.isEmpty()) {
-        EmptyState("📝", "لا توجد ملاحظات", "اضغط + لإضافة ملاحظة")
+        EmptyStateEnhanced(
+            icon = "📝",
+            title = "لا توجد ملاحظات",
+            subtitle = "اضغط + لإضافة ملاحظة",
+            actionText = "إضافة ملاحظة",
+            onActionClick = { /* TODO */ }
+        )
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -292,7 +310,7 @@ fun NotesTab(viewModel: AppViewModel, showAddDialog: Boolean) {
             items(notes, key = { it.id }) { note ->
                 NoteItem(
                     note = note,
-                    onDelete = { viewModel.deleteNote(note) }
+                    onDelete = { appViewModel.deleteNote(note) }
                 )
             }
         }
@@ -300,11 +318,17 @@ fun NotesTab(viewModel: AppViewModel, showAddDialog: Boolean) {
 }
 
 @Composable
-fun ExamsTab(viewModel: AppViewModel, showAddDialog: Boolean) {
-    val exams by viewModel.allExams.collectAsState(initial = emptyList())
+fun ExamsTab(appViewModel: AppViewModel) {
+    val exams by appViewModel.allExams.collectAsState()
 
     if (exams.isEmpty()) {
-        EmptyState("🎓", "لا توجد امتحانات", "اضغط + لإضافة امتحان")
+        EmptyStateEnhanced(
+            icon = "",
+            title = "لا توجد امتحانات",
+            subtitle = "اضغط + لإضافة امتحان",
+            actionText = "إضافة امتحان",
+            onActionClick = { /* TODO */ }
+        )
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -314,7 +338,7 @@ fun ExamsTab(viewModel: AppViewModel, showAddDialog: Boolean) {
             items(exams) { exam ->
                 ExamItem(
                     exam = exam,
-                    onDelete = { viewModel.deleteExam(exam) }
+                    onDelete = { appViewModel.deleteExam(exam) }
                 )
             }
         }
@@ -322,26 +346,7 @@ fun ExamsTab(viewModel: AppViewModel, showAddDialog: Boolean) {
 }
 
 @Composable
-fun EmptyState(icon: String, title: String, subtitle: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(48.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(icon, fontSize = 64.sp)
-            Spacer(Modifier.height(16.dp))
-            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            Text(subtitle, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Composable
 fun TaskItem(task: TaskEntity, onToggle: () -> Unit, onDelete: () -> Unit) {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val priorityColor = when (task.priority) {
         "high" -> Danger
         "medium" -> Warning
@@ -553,7 +558,7 @@ fun ExamItem(exam: ExamEntity, onDelete: () -> Unit) {
             }
             Spacer(Modifier.height(8.dp))
             Text("${exam.type} • ${exam.examDate}", style = MaterialTheme.typography.bodyMedium)
-            if (exam.time.isNotBlank()) Text("⏰ ${exam.time}", style = MaterialTheme.typography.bodySmall)
+            if (exam.time.isNotBlank()) Text(" ${exam.time}", style = MaterialTheme.typography.bodySmall)
             if (exam.room.isNotBlank()) Text("📍 ${exam.room}", style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(12.dp))
             Row(

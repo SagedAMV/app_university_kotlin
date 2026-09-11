@@ -91,22 +91,20 @@ fun ShimmerCard(
 }
 
 @Composable
-fun ShimmerListItem(modifier: Modifier = Modifier) {
+fun ShimmerFileItem(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(14.dp),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
                 .shimmerEffect()
         )
-
         Spacer(Modifier.width(12.dp))
-
         Column(modifier = Modifier.weight(1f)) {
             Box(
                 modifier = Modifier
@@ -115,9 +113,7 @@ fun ShimmerListItem(modifier: Modifier = Modifier) {
                     .clip(RoundedCornerShape(4.dp))
                     .shimmerEffect()
             )
-
             Spacer(Modifier.height(8.dp))
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.4f)
@@ -126,5 +122,92 @@ fun ShimmerListItem(modifier: Modifier = Modifier) {
                     .shimmerEffect()
             )
         }
+    }
+}
+
+@Composable
+fun ShimmerTaskItem(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(14.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .shimmerEffect()
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .height(16.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
+            Spacer(Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
+        }
+    }
+}
+
+@Composable
+fun ShimmerNoteItem(modifier: Modifier = Modifier) {
+    Column(modifier = modifier.padding(16.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .height(16.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .shimmerEffect()
+        )
+        Spacer(Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .shimmerEffect()
+        )
+    }
+}
+
+@Composable
+fun ShimmerExamItem(modifier: Modifier = Modifier) {
+    Column(modifier = modifier.padding(16.dp)) {
+        Row {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
+            Spacer(Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .width(60.dp)
+                    .height(24.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .shimmerEffect()
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.5f)
+                .height(14.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .shimmerEffect()
+        )
     }
 }
