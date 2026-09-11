@@ -18,7 +18,7 @@ import com.unimanager.app.data.entity.*
         NoteEntity::class,
         ExamEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -34,18 +34,34 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        // Migration from version 1 to 2: Add indices
+        // Migration 1 → 2: إضافة indices للملفات والمجلدات
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Create indices for files table
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_files_name ON files(name)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_files_folderId ON files(folderId)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_files_createdAt ON files(createdAt)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_files_isFavorite ON files(isFavorite)")
-
-                // Create indices for folders table
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_folders_parentId ON folders(parentId)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_folders_createdAt ON folders(createdAt)")
+            }
+        }
+
+        // Migration 2 → 3: إضافة indices للمهام والامتحانات والمحاضرات
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Tasks indices
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_tasks_isDone ON tasks(isDone)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_tasks_priority ON tasks(priority)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_tasks_dueDate ON tasks(dueDate)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_tasks_createdAt ON tasks(createdAt)")
+
+                // Exams indices
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_exams_examDate ON exams(examDate)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_exams_type ON exams(type)")
+
+                // Lectures indices
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_lectures_day ON lectures(day)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_lectures_timeFrom ON lectures(timeFrom)")
             }
         }
 
@@ -56,7 +72,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "uni_manager_db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

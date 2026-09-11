@@ -76,7 +76,7 @@ fun SettingsScreen(
                 SettingsItem(
                     icon = Icons.Filled.Info,
                     title = "مدير الجامعة",
-                    subtitle = "الإصدار 1.0.0",
+                    subtitle = "الإصدار 3.0.0",
                     onClick = { }
                 )
                 SettingsItem(

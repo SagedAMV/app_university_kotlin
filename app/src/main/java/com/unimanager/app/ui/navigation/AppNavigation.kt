@@ -22,7 +22,6 @@ import com.unimanager.app.ui.theme.UniManagerTheme
 import com.unimanager.app.ui.unified.UnifiedScreen
 import com.unimanager.app.util.ThemePreferenceManager
 import com.unimanager.app.viewmodel.AppViewModel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class NavItem(
@@ -32,10 +31,10 @@ data class NavItem(
 )
 
 val navItems = listOf(
-    NavItem("dashboard", "الرئيسية", Icons.Filled.Home),
-    NavItem("files", "الملفات", Icons.Filled.Folder),
-    NavItem("unified", "الأقسام", Icons.Filled.Apps),
-    NavItem("galaxy", "المجرة", Icons.Filled.Star)
+    NavItem(Routes.Dashboard.route, "الرئيسية", Icons.Filled.Home),
+    NavItem(Routes.Files.route, "الملفات", Icons.Filled.Folder),
+    NavItem(Routes.Unified.route, "الأقسام", Icons.Filled.Apps),
+    NavItem(Routes.Galaxy.route, "المجرة", Icons.Filled.Star)
 )
 
 @Composable
@@ -59,7 +58,8 @@ fun AppNavigation(viewModel: AppViewModel) {
                 // Hide bottom bar on settings/backup screens
                 val currentBackStack by navController.currentBackStackEntryAsState()
                 val currentRoute = currentBackStack?.destination?.route
-                if (currentRoute !in listOf("settings", "backup")) {
+                val hiddenRoutes = listOf(Routes.Settings.route, Routes.Backup.route)
+                if (currentRoute !in hiddenRoutes) {
                     AnimatedBottomNavBar(
                         navController = navController,
                         navItems = navItems
@@ -69,11 +69,11 @@ fun AppNavigation(viewModel: AppViewModel) {
         ) { padding ->
             NavHost(
                 navController = navController,
-                startDestination = "dashboard",
+                startDestination = Routes.Dashboard.route,
                 modifier = Modifier.padding(padding)
             ) {
                 composable(
-                    "dashboard",
+                    Routes.Dashboard.route,
                     enterTransition = { fadeIn(tween(300)) + slideInHorizontally { it } },
                     exitTransition = { fadeOut(tween(200)) },
                     popEnterTransition = { fadeIn(tween(300)) },
@@ -81,7 +81,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                 ) { DashboardScreen(viewModel = viewModel, navController = navController) }
 
                 composable(
-                    "files",
+                    Routes.Files.route,
                     enterTransition = { fadeIn(tween(300)) + slideInHorizontally { -it } },
                     exitTransition = { fadeOut(tween(200)) },
                     popEnterTransition = { fadeIn(tween(300)) },
@@ -89,7 +89,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                 ) { FilesScreen(viewModel = viewModel, navController = navController) }
 
                 composable(
-                    "unified",
+                    Routes.Unified.route,
                     enterTransition = { fadeIn(tween(300)) + slideInVertically { it / 3 } },
                     exitTransition = { fadeOut(tween(200)) },
                     popEnterTransition = { fadeIn(tween(300)) },
@@ -97,16 +97,15 @@ fun AppNavigation(viewModel: AppViewModel) {
                 ) { UnifiedScreen(viewModel = viewModel) }
 
                 composable(
-                    "galaxy",
+                    Routes.Galaxy.route,
                     enterTransition = { fadeIn(tween(400)) + scaleIn(initialScale = 0.9f) },
                     exitTransition = { fadeOut(tween(200)) },
                     popEnterTransition = { fadeIn(tween(400)) + scaleIn(initialScale = 0.9f) },
                     popExitTransition = { fadeOut(tween(200)) + scaleOut(targetScale = 0.9f) }
                 ) { GalaxyScreen(viewModel = viewModel, navController = navController) }
 
-                // Settings Screen
                 composable(
-                    "settings",
+                    Routes.Settings.route,
                     enterTransition = { fadeIn(tween(300)) + slideInHorizontally { it } },
                     exitTransition = { fadeOut(tween(200)) },
                     popEnterTransition = { fadeIn(tween(300)) },
@@ -114,7 +113,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                 ) {
                     SettingsScreen(
                         onBack = { navController.popBackStack() },
-                        onBackupClick = { navController.navigate("backup") },
+                        onBackupClick = { navController.navigate(Routes.Backup.route) },
                         isDarkTheme = isDarkTheme,
                         onThemeChange = { isDark ->
                             scope.launch {
@@ -124,9 +123,8 @@ fun AppNavigation(viewModel: AppViewModel) {
                     )
                 }
 
-                // Backup Screen
                 composable(
-                    "backup",
+                    Routes.Backup.route,
                     enterTransition = { fadeIn(tween(300)) + slideInVertically { it / 2 } },
                     exitTransition = { fadeOut(tween(200)) },
                     popEnterTransition = { fadeIn(tween(300)) },

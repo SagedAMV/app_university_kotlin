@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.unimanager.app.ui.components.*
+import com.unimanager.app.ui.navigation.Routes
 import com.unimanager.app.ui.theme.*
 import com.unimanager.app.viewmodel.AppViewModel
 import java.util.*
@@ -87,7 +88,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                     containerColor = Color.Transparent
                 ),
                 actions = {
-                    IconButton(onClick = { navController.navigate("settings") }) {
+                    IconButton(onClick = { navController.navigate(Routes.Settings.route) }) {
                         Icon(Icons.Filled.Settings, contentDescription = "الإعدادات")
                     }
                 }
@@ -167,7 +168,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                         title = "محاضرات اليوم",
                         subtitle = "$lectureCount محاضرة مجدولة",
                         color = Primary,
-                        onClick = { navController.navigate("unified") }
+                        onClick = { navController.navigate(Routes.Unified.route) }
                     )
                 }
             }
@@ -187,14 +188,14 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                             label = "الملفات",
                             color = Primary,
                             modifier = Modifier.weight(1f)
-                        ) { navController.navigate("files") }
+                        ) { navController.navigate(Routes.Files.route) }
 
                         QuickAction(
                             icon = Icons.Filled.CheckCircle,
                             label = "المهام",
                             color = Secondary,
                             modifier = Modifier.weight(1f)
-                        ) { navController.navigate("unified") }
+                        ) { navController.navigate(Routes.Unified.route) }
                     }
                 }
             }
@@ -207,14 +208,14 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                             label = "ملاحظاتي",
                             color = Info,
                             modifier = Modifier.weight(1f)
-                        ) { navController.navigate("unified") }
+                        ) { navController.navigate(Routes.Unified.route) }
 
                         QuickAction(
                             icon = Icons.Filled.Star,
                             label = "المجرة",
                             color = Warning,
                             modifier = Modifier.weight(1f)
-                        ) { navController.navigate("galaxy") }
+                        ) { navController.navigate(Routes.Galaxy.route) }
                     }
                 }
             }

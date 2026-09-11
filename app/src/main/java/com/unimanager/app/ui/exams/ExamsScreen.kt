@@ -190,8 +190,17 @@ fun AddExamDialog(onDismiss: () -> Unit, onAdd: (String, String, String, String,
                         FilterChip(selected = type == t, onClick = { type = t }, label = { Text(t) }, shape = RoundedCornerShape(12.dp))
                     }
                 }
-                OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("التاريخ (YYYY-MM-DD)") }, shape = RoundedCornerShape(12.dp), singleLine = true)
-                OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text("الوقت") }, shape = RoundedCornerShape(12.dp), singleLine = true)
+                // DatePicker و TimePicker بدلاً من إدخال نصي
+                com.unimanager.app.ui.components.DatePickerField(
+                    value = date,
+                    onValueChange = { date = it },
+                    label = "تاريخ الامتحان"
+                )
+                com.unimanager.app.ui.components.TimePickerField(
+                    value = time,
+                    onValueChange = { time = it },
+                    label = "وقت الامتحان"
+                )
                 OutlinedTextField(value = room, onValueChange = { room = it }, label = { Text("القاعة") }, shape = RoundedCornerShape(12.dp), singleLine = true)
             }
         },

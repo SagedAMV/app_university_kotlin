@@ -15,16 +15,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /**
- * Swipeable Item - يدعم السحب من اليمين لليسار للحذف
- * مناسب للواجهة العربية (RTL)
+ * Swipeable Item مع دعم Undo
+ * يدعم السحب من اليمين لليسار للحذف (RTL)
+ * مع إمكانية التراجع
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwipeableItem(
     onSwipe: () -> Unit,
+    onUndo: ((onRestore: () -> Unit) -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     var isDismissed by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     val dismissState = rememberDismissState(
         confirmValueChange = { dismissValue ->
             if (dismissValue == DismissValue.DismissedToStart) {
