@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,6 +39,8 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
     val totalSize by viewModel.totalSize.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val successMessage by viewModel.successMessage.collectAsState()
+    val upcomingExamList by viewModel.upcomingExams.collectAsState()
+    val pendingTaskList by viewModel.pendingTasks.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -84,8 +87,8 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                     containerColor = Color.Transparent
                 ),
                 actions = {
-                    IconButton(onClick = { /* TODO: Backup */ }) {
-                        Icon(Icons.Filled.CloudUpload, contentDescription = "نسخ احتياطي")
+                    IconButton(onClick = { navController.navigate("settings") }) {
+                        Icon(Icons.Filled.Settings, contentDescription = "الإعدادات")
                     }
                 }
             )
@@ -216,21 +219,60 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                 }
             }
 
-            // Recent Activity
+            // Recent Activity section
             item {
                 AnimatedEntrance(visible = screenVisible, delayMillis = 700) {
-                    SectionTitle("النشاط الأخير", color = Info)
+                    SectionTitle("النشاط القادم", color = Info)
                 }
             }
 
-            item {
-                AnimatedEntrance(visible = screenVisible, delayMillis = 750) {
-                    ActivityCard(
-                        icon = "",
-                        title = "تم رفع ملف جديد",
-                        time = "منذ 5 دقائق",
-                        color = Primary
-                    )
+            // Upcoming exams
+            if (upcomingExamList.isNotEmpty()) {
+                items(upcomingExamList.take(3)) { exam ->
+                    AnimatedEntrance(visible = screenVisible, delayMillis = 750) {
+                        ActivityCard(
+                            icon = "🎓",
+                            title = exam.subject,
+                            time = "${exam.type} • ${exam.examDate}",
+                            color = if (exam.type == "نهائي") Danger else Info
+                        )
+                    }
+                }
+            }
+
+            // Pending tasks
+            if (pendingTaskList.isNotEmpty()) {
+                items(pendingTaskList.take(3)) { task ->
+                    AnimatedEntrance(visible = screenVisible, delayMillis = 800) {
+                        ActivityCard(
+                            icon = "✅",
+                            title = task.title,
+                            time = when (task.priority) {
+                                "high" -> "أولوية عالية 🔴"
+                                "medium" -> "أولوية متوسطة 🟡"
+                                else -> "أولوية منخفضة"
+                            },
+                            color = when (task.priority) {
+                                "high" -> Danger
+                                "medium" -> Warning
+                                else -> Info
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Empty state
+            if (upcomingExamList.isEmpty() && pendingTaskList.isEmpty()) {
+                item {
+                    AnimatedEntrance(visible = screenVisible, delayMillis = 750) {
+                        ActivityCard(
+                            icon = "✨",
+                            title = "لا يوجد نشاط قادم",
+                            time = "أضف مهام أو امتحانات لتظهر هنا",
+                            color = Info
+                        )
+                    }
                 }
             }
         }
@@ -389,6 +431,14 @@ private fun HeroBentoCard(
         label = "pressScale"
     )
 
+    // Reset isPressed after animation
+    LaunchedEffect(isPressed.value) {
+        if (isPressed.value) {
+            kotlinx.coroutines.delay(150)
+            isPressed.value = false
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -454,6 +504,14 @@ private fun QuickAction(
         label = "pressScale"
     )
 
+    // Reset isPressed after animation
+    LaunchedEffect(isPressed.value) {
+        if (isPressed.value) {
+            kotlinx.coroutines.delay(150)
+            isPressed.value = false
+        }
+    }
+
     Card(
         modifier = modifier
             .scale(scale)
@@ -492,6 +550,7 @@ private fun QuickAction(
     }
 }
 
+@Composable
 @Composable
 private fun ActivityCard(
     icon: String,

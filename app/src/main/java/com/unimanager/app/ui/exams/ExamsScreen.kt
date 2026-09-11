@@ -102,8 +102,12 @@ fun ExamsScreen(viewModel: AppViewModel) {
 @Composable
 fun ExamItem(exam: ExamEntity, onDelete: () -> Unit) {
     val daysUntil = try {
-        val date = LocalDate.parse(exam.examDate)
-        java.time.Period.between(LocalDate.now(), date).days
+        if (exam.examDate.isBlank()) 999
+        else {
+            val date = LocalDate.parse(exam.examDate)
+            // استخدام ChronoUnit.DAYS.between للحصول على الفرق الكلي بالأيام
+            java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), date).toInt()
+        }
     } catch (e: Exception) { 999 }
 
     val color = when {

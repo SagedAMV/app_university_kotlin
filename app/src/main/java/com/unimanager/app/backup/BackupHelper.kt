@@ -12,18 +12,22 @@ import java.io.*
 class BackupHelper(private val context: Context) {
 
     companion object {
-        private const val BACKUP_VERSION = 1
+        private const val BACKUP_VERSION = 2
         private const val FILE_NAME = "unimanager_backup.json"
     }
 
+    /**
+     * تصدير النسخة الاحتياطية
+     */
     suspend fun exportBackup(uri: Uri): Result<String> = withContext(Dispatchers.IO) {
         try {
             val db = AppDatabase.getInstance(context)
-            
+
             val backupData = JSONObject().apply {
                 put("version", BACKUP_VERSION)
                 put("timestamp", System.currentTimeMillis())
-                
+                put("appVersion", context.packageName)
+
                 // Export folders
                 val foldersArray = JSONArray()
                 db.folderDao().getAllFoldersSync().forEach { folder ->
@@ -37,7 +41,7 @@ class BackupHelper(private val context: Context) {
                     })
                 }
                 put("folders", foldersArray)
-                
+
                 // Export files
                 val filesArray = JSONArray()
                 db.fileDao().getAllFilesSync().forEach { file ->
@@ -55,7 +59,7 @@ class BackupHelper(private val context: Context) {
                     })
                 }
                 put("files", filesArray)
-                
+
                 // Export tasks
                 val tasksArray = JSONArray()
                 db.taskDao().getAllTasksSync().forEach { task ->
@@ -70,7 +74,7 @@ class BackupHelper(private val context: Context) {
                     })
                 }
                 put("tasks", tasksArray)
-                
+
                 // Export notes
                 val notesArray = JSONArray()
                 db.noteDao().getAllNotesSync().forEach { note ->
@@ -82,7 +86,7 @@ class BackupHelper(private val context: Context) {
                     })
                 }
                 put("notes", notesArray)
-                
+
                 // Export exams
                 val examsArray = JSONArray()
                 db.examDao().getAllExamsSync().forEach { exam ->
@@ -97,7 +101,7 @@ class BackupHelper(private val context: Context) {
                     })
                 }
                 put("exams", examsArray)
-                
+
                 // Export lectures
                 val lecturesArray = JSONArray()
                 db.lectureDao().getAllLecturesSync().forEach { lecture ->
@@ -113,150 +117,189 @@ class BackupHelper(private val context: Context) {
                 }
                 put("lectures", lecturesArray)
             }
-            
+
             // Write to file
             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                 outputStream.write(backupData.toString(2).toByteArray())
-            }
-            
+            } ?: throw IOException("Cannot open output stream")
+
             Result.success("تم تصدير النسخة الاحتياطية بنجاح")
         } catch (e: Exception) {
+            android.util.Log.e("BackupHelper", "Export failed", e)
             Result.failure(e)
         }
     }
 
+    /**
+     * استيراد النسخة الاحتياطية
+     * الإصلاح: التحقق من صحة البيانات أولاً ثم الاستيراد في transaction
+     */
     suspend fun importBackup(uri: Uri): Result<String> = withContext(Dispatchers.IO) {
         try {
             val db = AppDatabase.getInstance(context)
-            
-            // Read from file
+
+            // Step 1: قراءة البيانات أولاً
             val jsonData = context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 inputStream.bufferedReader().readText()
-            } ?: throw IOException("Failed to read backup file")
-            
-            val backupData = JSONObject(jsonData)
+            } ?: throw IOException("فشل في قراءة ملف النسخة الاحتياطية")
+
+            // Step 2: التحقق من صحة JSON
+            val backupData = try {
+                JSONObject(jsonData)
+            } catch (e: Exception) {
+                throw IOException("ملف النسخة الاحتياطية تالف أو غير صالح")
+            }
+
             val version = backupData.optInt("version", 1)
-            
-            // Clear existing data
-            db.folderDao().deleteAll()
-            db.fileDao().deleteAll()
-            db.taskDao().deleteAll()
-            db.noteDao().deleteAll()
-            db.examDao().deleteAll()
-            db.lectureDao().deleteAll()
-            
-            // Import folders
-            backupData.optJSONArray("folders")?.let { foldersArray ->
-                for (i in 0 until foldersArray.length()) {
-                    val folderObj = foldersArray.getJSONObject(i)
-                    db.folderDao().insertSync(
-                        com.unimanager.app.data.entity.FolderEntity(
-                            id = folderObj.optLong("id", 0),
-                            name = folderObj.getString("name"),
-                            description = folderObj.optString("description", ""),
-                            color = folderObj.optString("color", "#6366f1"),
-                            parentId = if (folderObj.has("parentId") && !folderObj.isNull("parentId")) 
-                                folderObj.getLong("parentId") else null,
-                            createdAt = folderObj.optLong("createdAt", System.currentTimeMillis())
-                        )
-                    )
+            if (version > BACKUP_VERSION) {
+                throw IOException("إصدار النسخة الاحتياطية ($version) أحدث من التطبيق ($BACKUP_VERSION)")
+            }
+
+            // Step 3: Pre-parse all data قبل الحذف
+            val folders = parseFolders(backupData.optJSONArray("folders"))
+            val files = parseFiles(backupData.optJSONArray("files"))
+            val tasks = parseTasks(backupData.optJSONArray("tasks"))
+            val notes = parseNotes(backupData.optJSONArray("notes"))
+            val exams = parseExams(backupData.optJSONArray("exams"))
+            val lectures = parseLectures(backupData.optJSONArray("lectures"))
+
+            // Step 4: الآن نحذف ونستورد في transaction
+            db.runInTransaction {
+                try {
+                    // Clear existing data
+                    db.folderDao().deleteAll()
+                    db.fileDao().deleteAll()
+                    db.taskDao().deleteAll()
+                    db.noteDao().deleteAll()
+                    db.examDao().deleteAll()
+                    db.lectureDao().deleteAll()
+
+                    // Import folders أولاً (لأن الملفات تعتمد عليها)
+                    folders.forEach { db.folderDao().insertSync(it) }
+
+                    // Import files
+                    files.forEach { db.fileDao().insertSync(it) }
+
+                    // Import tasks
+                    tasks.forEach { db.taskDao().insertSync(it) }
+
+                    // Import notes
+                    notes.forEach { db.noteDao().insertSync(it) }
+
+                    // Import exams
+                    exams.forEach { db.examDao().insertSync(it) }
+
+                    // Import lectures
+                    lectures.forEach { db.lectureDao().insertSync(it) }
+                } catch (e: Exception) {
+                    throw IOException("فشل استيراد البيانات: ${e.message}")
                 }
             }
-            
-            // Import files
-            backupData.optJSONArray("files")?.let { filesArray ->
-                for (i in 0 until filesArray.length()) {
-                    val fileObj = filesArray.getJSONObject(i)
-                    db.fileDao().insertSync(
-                        com.unimanager.app.data.entity.FileEntity(
-                            id = fileObj.optLong("id", 0),
-                            name = fileObj.getString("name"),
-                            extension = fileObj.getString("extension"),
-                            type = fileObj.getString("type"),
-                            mimeType = fileObj.getString("mimeType"),
-                            size = fileObj.optLong("size", 0),
-                            folderId = if (fileObj.has("folderId") && !fileObj.isNull("folderId"))
-                                fileObj.getLong("folderId") else null,
-                            filePath = fileObj.optString("filePath", ""),
-                            isFavorite = fileObj.optBoolean("isFavorite", false),
-                            createdAt = fileObj.optLong("createdAt", System.currentTimeMillis())
-                        )
-                    )
-                }
-            }
-            
-            // Import tasks
-            backupData.optJSONArray("tasks")?.let { tasksArray ->
-                for (i in 0 until tasksArray.length()) {
-                    val taskObj = tasksArray.getJSONObject(i)
-                    db.taskDao().insertSync(
-                        com.unimanager.app.data.entity.TaskEntity(
-                            id = taskObj.optLong("id", 0),
-                            title = taskObj.getString("title"),
-                            description = taskObj.optString("description", ""),
-                            priority = taskObj.optString("priority", "medium"),
-                            dueDate = taskObj.optString("dueDate", null),
-                            isDone = taskObj.optBoolean("isDone", false),
-                            createdAt = taskObj.optLong("createdAt", System.currentTimeMillis())
-                        )
-                    )
-                }
-            }
-            
-            // Import notes
-            backupData.optJSONArray("notes")?.let { notesArray ->
-                for (i in 0 until notesArray.length()) {
-                    val noteObj = notesArray.getJSONObject(i)
-                    db.noteDao().insertSync(
-                        com.unimanager.app.data.entity.NoteEntity(
-                            id = noteObj.optLong("id", 0),
-                            title = noteObj.getString("title"),
-                            content = noteObj.getString("content"),
-                            updatedAt = noteObj.optLong("updatedAt", System.currentTimeMillis())
-                        )
-                    )
-                }
-            }
-            
-            // Import exams
-            backupData.optJSONArray("exams")?.let { examsArray ->
-                for (i in 0 until examsArray.length()) {
-                    val examObj = examsArray.getJSONObject(i)
-                    db.examDao().insertSync(
-                        com.unimanager.app.data.entity.ExamEntity(
-                            id = examObj.optLong("id", 0),
-                            subject = examObj.getString("subject"),
-                            type = examObj.optString("type", "نصفي"),
-                            examDate = examObj.getString("examDate"),
-                            time = examObj.optString("time", ""),
-                            room = examObj.optString("room", ""),
-                            notes = examObj.optString("notes", "")
-                        )
-                    )
-                }
-            }
-            
-            // Import lectures
-            backupData.optJSONArray("lectures")?.let { lecturesArray ->
-                for (i in 0 until lecturesArray.length()) {
-                    val lectureObj = lecturesArray.getJSONObject(i)
-                    db.lectureDao().insertSync(
-                        com.unimanager.app.data.entity.LectureEntity(
-                            id = lectureObj.optLong("id", 0),
-                            subject = lectureObj.getString("subject"),
-                            doctor = lectureObj.optString("doctor", ""),
-                            day = lectureObj.getString("day"),
-                            timeFrom = lectureObj.getString("timeFrom"),
-                            timeTo = lectureObj.optString("timeTo", ""),
-                            room = lectureObj.optString("room", "")
-                        )
-                    )
-                }
-            }
-            
+
             Result.success("تم استيراد النسخة الاحتياطية بنجاح")
         } catch (e: Exception) {
+            android.util.Log.e("BackupHelper", "Import failed", e)
             Result.failure(e)
+        }
+    }
+
+    // ====== Parse functions ======
+
+    private fun parseFolders(array: JSONArray?): List<com.unimanager.app.data.entity.FolderEntity> {
+        if (array == null) return emptyList()
+        return (0 until array.length()).map { i ->
+            val obj = array.getJSONObject(i)
+            com.unimanager.app.data.entity.FolderEntity(
+                id = obj.optLong("id", 0),
+                name = obj.getString("name"),
+                description = obj.optString("description", ""),
+                color = obj.optString("color", "#6366f1"),
+                parentId = if (obj.has("parentId") && !obj.isNull("parentId"))
+                    obj.getLong("parentId") else null,
+                createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+            )
+        }
+    }
+
+    private fun parseFiles(array: JSONArray?): List<com.unimanager.app.data.entity.FileEntity> {
+        if (array == null) return emptyList()
+        return (0 until array.length()).map { i ->
+            val obj = array.getJSONObject(i)
+            com.unimanager.app.data.entity.FileEntity(
+                id = obj.optLong("id", 0),
+                name = obj.getString("name"),
+                extension = obj.getString("extension"),
+                type = obj.getString("type"),
+                mimeType = obj.getString("mimeType"),
+                size = obj.optLong("size", 0),
+                folderId = if (obj.has("folderId") && !obj.isNull("folderId"))
+                    obj.getLong("folderId") else null,
+                filePath = obj.optString("filePath", ""),
+                isFavorite = obj.optBoolean("isFavorite", false),
+                createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+            )
+        }
+    }
+
+    private fun parseTasks(array: JSONArray?): List<com.unimanager.app.data.entity.TaskEntity> {
+        if (array == null) return emptyList()
+        return (0 until array.length()).map { i ->
+            val obj = array.getJSONObject(i)
+            com.unimanager.app.data.entity.TaskEntity(
+                id = obj.optLong("id", 0),
+                title = obj.getString("title"),
+                description = obj.optString("description", ""),
+                priority = obj.optString("priority", "medium"),
+                dueDate = if (obj.has("dueDate") && !obj.isNull("dueDate"))
+                    obj.getString("dueDate") else null,
+                isDone = obj.optBoolean("isDone", false),
+                createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+            )
+        }
+    }
+
+    private fun parseNotes(array: JSONArray?): List<com.unimanager.app.data.entity.NoteEntity> {
+        if (array == null) return emptyList()
+        return (0 until array.length()).map { i ->
+            val obj = array.getJSONObject(i)
+            com.unimanager.app.data.entity.NoteEntity(
+                id = obj.optLong("id", 0),
+                title = obj.getString("title"),
+                content = obj.getString("content"),
+                updatedAt = obj.optLong("updatedAt", System.currentTimeMillis())
+            )
+        }
+    }
+
+    private fun parseExams(array: JSONArray?): List<com.unimanager.app.data.entity.ExamEntity> {
+        if (array == null) return emptyList()
+        return (0 until array.length()).map { i ->
+            val obj = array.getJSONObject(i)
+            com.unimanager.app.data.entity.ExamEntity(
+                id = obj.optLong("id", 0),
+                subject = obj.getString("subject"),
+                type = obj.optString("type", "نصفي"),
+                examDate = obj.getString("examDate"),
+                time = obj.optString("time", ""),
+                room = obj.optString("room", ""),
+                notes = obj.optString("notes", "")
+            )
+        }
+    }
+
+    private fun parseLectures(array: JSONArray?): List<com.unimanager.app.data.entity.LectureEntity> {
+        if (array == null) return emptyList()
+        return (0 until array.length()).map { i ->
+            val obj = array.getJSONObject(i)
+            com.unimanager.app.data.entity.LectureEntity(
+                id = obj.optLong("id", 0),
+                subject = obj.getString("subject"),
+                doctor = obj.optString("doctor", ""),
+                day = obj.getString("day"),
+                timeFrom = obj.getString("timeFrom"),
+                timeTo = obj.optString("timeTo", ""),
+                room = obj.optString("room", "")
+            )
         }
     }
 }

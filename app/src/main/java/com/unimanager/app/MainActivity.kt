@@ -57,10 +57,9 @@ class MainActivity : ComponentActivity() {
         requestFilePermissions()
 
         setContent {
-            UniManagerTheme {
-                val viewModel: AppViewModel = hiltViewModel()
-                AppNavigation(viewModel = viewModel)
-            }
+            // Theme is now applied inside AppNavigation via ThemePreferenceManager
+            val viewModel: AppViewModel = hiltViewModel()
+            AppNavigation(viewModel = viewModel)
         }
     }
 

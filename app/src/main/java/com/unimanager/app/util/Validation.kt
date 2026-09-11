@@ -93,14 +93,15 @@ object Validation {
     }
 
     /**
-     * Sanitize input - remove dangerous characters
+     * Sanitize input - إزالة الأحرف الخطيرة فقط
+     * إصلاح: لا نحذف الأحرف العربية أو الأكاديمية الشرعية
      */
     fun sanitizeInput(input: String): String {
         return input
             .trim()
             .take(MAX_NAME_LENGTH)
-            .replace(Regex("[<>\"'&]"), "") // Remove HTML/XML special chars
-            .replace(Regex("[;\\-\\-]"), "") // Remove SQL injection attempts
+            .replace(Regex("[<>]"), "") // Remove HTML/XML brackets only
+            .replace(Regex("[\\x00-\\x1F\\x7F]"), "") // Remove control characters
     }
 
     /**

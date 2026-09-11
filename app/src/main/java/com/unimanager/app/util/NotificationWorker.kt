@@ -4,7 +4,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -15,17 +14,29 @@ import kotlinx.coroutines.withContext
 
 /**
  * Notification Worker - تنفيذ الإشعارات في الخلفية
+ * يستخدم القنوات المخصصة (exams/tasks) بدلاً من general
  */
 class NotificationWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    companion object {
+        const val KEY_TITLE = "title"
+        const val KEY_MESSAGE = "message"
+        const val KEY_NOTIFICATION_ID = "notificationId"
+        const val KEY_CHANNEL = "channel"
+
+        // قناة افتراضية
+        const val DEFAULT_CHANNEL = "general"
+    }
+
+    override suspend fun doWork(): Result = withContext(Dispatchers.Main) {
         try {
-            val title = inputData.getString("title") ?: "إشعار"
-            val message = inputData.getString("message") ?: ""
-            val notificationId = inputData.getInt("notificationId", 0)
+            val title = inputData.getString(KEY_TITLE) ?: "إشعار"
+            val message = inputData.getString(KEY_MESSAGE) ?: ""
+            val notificationId = inputData.getInt(KEY_NOTIFICATION_ID, 0)
+            val channel = inputData.getString(KEY_CHANNEL) ?: DEFAULT_CHANNEL
 
             if (notificationId == 0) {
                 return@withContext Result.failure()
@@ -42,11 +53,19 @@ class NotificationWorker(
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
 
-            val notification = NotificationCompat.Builder(applicationContext, "general")
+            // استخدام الأولوية المناسبة للقناة
+            val priority = when (channel) {
+                "exams" -> NotificationCompat.PRIORITY_HIGH
+                "tasks" -> NotificationCompat.PRIORITY_DEFAULT
+                "backup" -> NotificationCompat.PRIORITY_LOW
+                else -> NotificationCompat.PRIORITY_DEFAULT
+            }
+
+            val notification = NotificationCompat.Builder(applicationContext, channel)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle(title)
                 .setContentText(message)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setPriority(priority)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
                 .build()
@@ -57,7 +76,7 @@ class NotificationWorker(
             Result.success()
         } catch (e: Exception) {
             android.util.Log.e("NotificationWorker", "Failed to send notification", e)
-            Result.retry()
+            Result.failure()
         }
     }
 }

@@ -1,15 +1,12 @@
 package com.unimanager.app.util
 
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import androidx.work.*
 import com.unimanager.app.data.entity.ExamEntity
 import com.unimanager.app.data.entity.TaskEntity
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
 /**
@@ -21,11 +18,6 @@ class ExamNotificationScheduler(private val context: Context) {
     companion object {
         private const val WORK_TAG_EXAM = "exam_notification"
         private const val WORK_TAG_TASK = "task_notification"
-        private const val KEY_EXAM_SUBJECT = "exam_subject"
-        private const val KEY_EXAM_DATE = "exam_date"
-        private const val KEY_EXAM_ID = "exam_id"
-        private const val KEY_TASK_TITLE = "task_title"
-        private const val KEY_TASK_ID = "task_id"
     }
 
     /**
@@ -46,7 +38,8 @@ class ExamNotificationScheduler(private val context: Context) {
                     title = "تذكير بالامتحان",
                     message = "${exam.subject} غداً",
                     triggerTime = oneDayBefore,
-                    notificationId = exam.id.toInt() * 10 + 1
+                    notificationId = (exam.id * 10 + 1).toInt(),
+                    channel = "exams"
                 )
             }
 
@@ -58,7 +51,8 @@ class ExamNotificationScheduler(private val context: Context) {
                     title = "تذكير بالامتحان",
                     message = "${exam.subject} بعد ساعة",
                     triggerTime = oneHourBefore,
-                    notificationId = exam.id.toInt() * 10 + 2
+                    notificationId = (exam.id * 10 + 2).toInt(),
+                    channel = "exams"
                 )
             }
 
@@ -69,7 +63,8 @@ class ExamNotificationScheduler(private val context: Context) {
                     title = "الامتحان الآن",
                     message = "${exam.subject} - ${exam.room}",
                     triggerTime = examDateTime,
-                    notificationId = exam.id.toInt() * 10 + 3
+                    notificationId = (exam.id * 10 + 3).toInt(),
+                    channel = "exams"
                 )
             }
         } catch (e: Exception) {
@@ -95,7 +90,8 @@ class ExamNotificationScheduler(private val context: Context) {
                 title = "تذكير بالمهمة",
                 message = task.title,
                 triggerTime = dueDateTime,
-                notificationId = task.id.toInt() + 1000
+                notificationId = (task.id + 1000).toInt(),
+                channel = "tasks"
             )
         } catch (e: Exception) {
             android.util.Log.e("TaskScheduler", "Failed to schedule task notification", e)
@@ -107,11 +103,9 @@ class ExamNotificationScheduler(private val context: Context) {
      */
     fun cancelExamNotifications(examId: Long) {
         val workManager = WorkManager.getInstance(context)
-        for (i in 1..3) {
-            workManager.cancelUniqueWork("${WORK_TAG_EXAM}_${examId}_${i}day")
-            workManager.cancelUniqueWork("${WORK_TAG_EXAM}_${examId}_${i}hour")
-            workManager.cancelUniqueWork("${WORK_TAG_EXAM}_${examId}_now")
-        }
+        workManager.cancelUniqueWork("${WORK_TAG_EXAM}_${examId}_1day")
+        workManager.cancelUniqueWork("${WORK_TAG_EXAM}_${examId}_1hour")
+        workManager.cancelUniqueWork("${WORK_TAG_EXAM}_${examId}_now")
     }
 
     /**
@@ -130,14 +124,16 @@ class ExamNotificationScheduler(private val context: Context) {
         title: String,
         message: String,
         triggerTime: LocalDateTime,
-        notificationId: Int
+        notificationId: Int,
+        channel: String
     ) {
         val workManager = WorkManager.getInstance(context)
 
         val data = Data.Builder()
-            .putString("title", title)
-            .putString("message", message)
-            .putInt("notificationId", notificationId)
+            .putString(NotificationWorker.KEY_TITLE, title)
+            .putString(NotificationWorker.KEY_MESSAGE, message)
+            .putInt(NotificationWorker.KEY_NOTIFICATION_ID, notificationId)
+            .putString(NotificationWorker.KEY_CHANNEL, channel)
             .build()
 
         val delay = java.time.Duration.between(LocalDateTime.now(), triggerTime).toMillis()
@@ -146,7 +142,6 @@ class ExamNotificationScheduler(private val context: Context) {
         val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .setInputData(data)
-            .addTag(workTag)
             .build()
 
         workManager.enqueueUniqueWork(

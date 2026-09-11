@@ -9,14 +9,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.*
+import com.unimanager.app.ui.backup.BackupScreen
 import com.unimanager.app.ui.components.AnimatedBottomNavBar
 import com.unimanager.app.ui.dashboard.DashboardScreen
 import com.unimanager.app.ui.files.FilesScreen
 import com.unimanager.app.ui.galaxy.GalaxyScreen
+import com.unimanager.app.ui.settings.SettingsScreen
+import com.unimanager.app.ui.theme.UniManagerTheme
 import com.unimanager.app.ui.unified.UnifiedScreen
+import com.unimanager.app.util.ThemePreferenceManager
 import com.unimanager.app.viewmodel.AppViewModel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 data class NavItem(
     val route: String,
@@ -34,51 +41,102 @@ val navItems = listOf(
 @Composable
 fun AppNavigation(viewModel: AppViewModel) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val themeManager = remember { ThemePreferenceManager(context) }
 
-    Scaffold(
-        bottomBar = {
-            AnimatedBottomNavBar(
+    // Theme state
+    val isDarkTheme by themeManager.isDarkTheme.collectAsState(initial = false)
+    val useDynamicColor by themeManager.useDynamicColor.collectAsState(initial = true)
+    val scope = rememberCoroutineScope()
+
+    // Apply theme
+    UniManagerTheme(
+        darkTheme = isDarkTheme,
+        dynamicColor = useDynamicColor
+    ) {
+        Scaffold(
+            bottomBar = {
+                // Hide bottom bar on settings/backup screens
+                val currentBackStack by navController.currentBackStackEntryAsState()
+                val currentRoute = currentBackStack?.destination?.route
+                if (currentRoute !in listOf("settings", "backup")) {
+                    AnimatedBottomNavBar(
+                        navController = navController,
+                        navItems = navItems
+                    )
+                }
+            }
+        ) { padding ->
+            NavHost(
                 navController = navController,
-                navItems = navItems
-            )
-        }
-    ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = "dashboard",
-            modifier = Modifier.padding(padding)
-        ) {
-            composable(
-                "dashboard",
-                enterTransition = { fadeIn(tween(300)) + slideInHorizontally { it } },
-                exitTransition = { fadeOut(tween(200)) },
-                popEnterTransition = { fadeIn(tween(300)) },
-                popExitTransition = { fadeOut(tween(200)) + slideOutHorizontally { it } }
-            ) { DashboardScreen(viewModel = viewModel, navController = navController) }
+                startDestination = "dashboard",
+                modifier = Modifier.padding(padding)
+            ) {
+                composable(
+                    "dashboard",
+                    enterTransition = { fadeIn(tween(300)) + slideInHorizontally { it } },
+                    exitTransition = { fadeOut(tween(200)) },
+                    popEnterTransition = { fadeIn(tween(300)) },
+                    popExitTransition = { fadeOut(tween(200)) + slideOutHorizontally { it } }
+                ) { DashboardScreen(viewModel = viewModel, navController = navController) }
 
-            composable(
-                "files",
-                enterTransition = { fadeIn(tween(300)) + slideInHorizontally { -it } },
-                exitTransition = { fadeOut(tween(200)) },
-                popEnterTransition = { fadeIn(tween(300)) },
-                popExitTransition = { fadeOut(tween(200)) + slideOutHorizontally { -it } }
-            ) { FilesScreen(viewModel = viewModel, navController = navController) }
+                composable(
+                    "files",
+                    enterTransition = { fadeIn(tween(300)) + slideInHorizontally { -it } },
+                    exitTransition = { fadeOut(tween(200)) },
+                    popEnterTransition = { fadeIn(tween(300)) },
+                    popExitTransition = { fadeOut(tween(200)) + slideOutHorizontally { -it } }
+                ) { FilesScreen(viewModel = viewModel, navController = navController) }
 
-            composable(
-                "unified",
-                enterTransition = { fadeIn(tween(300)) + slideInVertically { it / 3 } },
-                exitTransition = { fadeOut(tween(200)) },
-                popEnterTransition = { fadeIn(tween(300)) },
-                popExitTransition = { fadeOut(tween(200)) }
-            ) { UnifiedScreen(viewModel = viewModel) }
+                composable(
+                    "unified",
+                    enterTransition = { fadeIn(tween(300)) + slideInVertically { it / 3 } },
+                    exitTransition = { fadeOut(tween(200)) },
+                    popEnterTransition = { fadeIn(tween(300)) },
+                    popExitTransition = { fadeOut(tween(200)) }
+                ) { UnifiedScreen(viewModel = viewModel) }
 
-            composable(
-                "galaxy",
-                enterTransition = { fadeIn(tween(400)) + scaleIn(initialScale = 0.9f) },
-                exitTransition = { fadeOut(tween(200)) },
-                popEnterTransition = { fadeIn(tween(400)) + scaleIn(initialScale = 0.9f) },
-                popExitTransition = { fadeOut(tween(200)) + scaleOut(targetScale = 0.9f) }
-            ) { GalaxyScreen(viewModel = viewModel, navController = navController) }
+                composable(
+                    "galaxy",
+                    enterTransition = { fadeIn(tween(400)) + scaleIn(initialScale = 0.9f) },
+                    exitTransition = { fadeOut(tween(200)) },
+                    popEnterTransition = { fadeIn(tween(400)) + scaleIn(initialScale = 0.9f) },
+                    popExitTransition = { fadeOut(tween(200)) + scaleOut(targetScale = 0.9f) }
+                ) { GalaxyScreen(viewModel = viewModel, navController = navController) }
+
+                // Settings Screen
+                composable(
+                    "settings",
+                    enterTransition = { fadeIn(tween(300)) + slideInHorizontally { it } },
+                    exitTransition = { fadeOut(tween(200)) },
+                    popEnterTransition = { fadeIn(tween(300)) },
+                    popExitTransition = { fadeOut(tween(200)) + slideOutHorizontally { it } }
+                ) {
+                    SettingsScreen(
+                        onBack = { navController.popBackStack() },
+                        onBackupClick = { navController.navigate("backup") },
+                        isDarkTheme = isDarkTheme,
+                        onThemeChange = { isDark ->
+                            scope.launch {
+                                themeManager.setDarkTheme(isDark)
+                            }
+                        }
+                    )
+                }
+
+                // Backup Screen
+                composable(
+                    "backup",
+                    enterTransition = { fadeIn(tween(300)) + slideInVertically { it / 2 } },
+                    exitTransition = { fadeOut(tween(200)) },
+                    popEnterTransition = { fadeIn(tween(300)) },
+                    popExitTransition = { fadeOut(tween(200)) + slideOutVertically { it / 2 } }
+                ) {
+                    BackupScreen(
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+            }
         }
     }
 }

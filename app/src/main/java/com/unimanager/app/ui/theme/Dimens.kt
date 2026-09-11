@@ -1,6 +1,7 @@
 package com.unimanager.app.ui.theme
 
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /**
  * Spacing - قيم موحدة للمسافات في التطبيق
@@ -71,5 +72,3 @@ object FontSize {
     val huge = 24.sp
     val title = 28.sp
 }
-
-import androidx.compose.ui.unit.sp

@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.unimanager.app.data.AppDatabase
 import com.unimanager.app.data.dao.*
 import com.unimanager.app.data.repository.AppRepository
+import com.unimanager.app.util.ThemePreferenceManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -60,5 +61,13 @@ object DatabaseModule {
             folderDao, fileDao, lectureDao,
             taskDao, noteDao, examDao
         )
+    }
+
+    @Provides
+    @Singleton
+    fun provideThemePreferenceManager(
+        @ApplicationContext context: android.content.Context
+    ): ThemePreferenceManager {
+        return ThemePreferenceManager(context)
     }
 }
