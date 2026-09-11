@@ -133,7 +133,7 @@ fun DashboardScreen(viewModel: AppViewModel, navController: NavController) {
                         StatCard(
                             icon = Icons.Filled.CheckCircle,
                             number = "$pendingTasks",
-                            label = "مهمةPending",
+                            label = "مهام معلقة",
                             color = Warning,
                             modifier = Modifier.weight(1f)
                         )

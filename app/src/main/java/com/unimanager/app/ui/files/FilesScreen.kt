@@ -95,7 +95,11 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
                 }
                 items(rootFolders) { folder ->
                     SlideUpEntrance(visible = screenVisible) {
-                        FolderItem(folder = folder, fileCount = allFiles.count { it.folderId == folder.id })
+                        FolderItem(
+                            folder = folder,
+                            fileCount = allFiles.count { it.folderId == folder.id },
+                            onFolderClick = { /* TODO: Navigate to folder */ }
+                        )
                     }
                 }
             }
@@ -120,9 +124,15 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
                         }
                     }
                 }
-                items(allFiles.take(10)) { file ->
+                items(allFiles) { file ->
                     SlideUpEntrance(visible = screenVisible) {
-                        FileItem(file = file)
+                        FileItem(
+                            file = file,
+                            onFileClick = { /* TODO: Open file */ },
+                            onFavoriteToggle = {
+                                viewModel.toggleFavorite(file.id, !file.isFavorite)
+                            }
+                        )
                     }
                 }
             }
@@ -151,14 +161,72 @@ fun FilesScreen(viewModel: AppViewModel, navController: NavController) {
     if (showAddDialog) {
         AddFileDialog(
             onDismiss = { showAddDialog = false },
-            onAddFile = { name, ext -> /* TODO */ showAddDialog = false },
-            onAddFolder = { name -> /* TODO */ showAddDialog = false }
+            onAddFile = { name, ext ->
+                viewModel.insertFile(
+                    FileEntity(
+                        name = name,
+                        extension = ext,
+                        type = determineFileType(ext),
+                        mimeType = getMimeType(ext),
+                        size = 0L,
+                        folderId = null,
+                        filePath = ""
+                    )
+                )
+                showAddDialog = false
+            },
+            onAddFolder = { name ->
+                viewModel.insertFolder(
+                    FolderEntity(
+                        name = name,
+                        parentId = null
+                    )
+                )
+                showAddDialog = false
+            }
         )
     }
 }
 
+// Helper function to determine file type
+fun determineFileType(extension: String): String {
+    return when (extension.lowercase()) {
+        "pdf" -> "pdf"
+        "doc", "docx" -> "doc"
+        "xls", "xlsx" -> "doc"
+        "ppt", "pptx" -> "doc"
+        "jpg", "jpeg", "png", "gif", "webp" -> "img"
+        "mp4", "avi", "mkv", "mov" -> "video"
+        "mp3", "wav", "m4a", "ogg" -> "audio"
+        "zip", "rar", "7z" -> "archive"
+        "txt", "md" -> "code"
+        else -> "other"
+    }
+}
+
+// Helper function to get MIME type
+fun getMimeType(extension: String): String {
+    return when (extension.lowercase()) {
+        "pdf" -> "application/pdf"
+        "doc", "docx" -> "application/msword"
+        "xls", "xlsx" -> "application/vnd.ms-excel"
+        "ppt", "pptx" -> "application/vnd.ms-powerpoint"
+        "jpg", "jpeg" -> "image/jpeg"
+        "png" -> "image/png"
+        "gif" -> "image/gif"
+        "mp4" -> "video/mp4"
+        "mp3" -> "audio/mpeg"
+        "txt" -> "text/plain"
+        else -> "*/*"
+    }
+}
+
 @Composable
-fun FolderItem(folder: FolderEntity, fileCount: Int) {
+fun FolderItem(
+    folder: FolderEntity,
+    fileCount: Int,
+    onFolderClick: (FolderEntity) -> Unit
+) {
     val isPressed = remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed.value) 0.97f else 1f,
@@ -175,7 +243,10 @@ fun FolderItem(folder: FolderEntity, fileCount: Int) {
         modifier = Modifier
             .fillMaxWidth()
             .scale(scale)
-            .clickable { isPressed.value = true },
+            .clickable {
+                isPressed.value = true
+                onFolderClick(folder)
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Primary.copy(alpha = if (isDark) 0.12f else 0.08f)
@@ -206,13 +277,17 @@ fun FolderItem(folder: FolderEntity, fileCount: Int) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Icon(Icons.Filled.ChevronLeft, contentDescription = null, tint = Primary)
+            Icon(Icons.Filled.ChevronLeft, contentDescription = "فتح المجلد", tint = Primary)
         }
     }
 }
 
 @Composable
-fun FileItem(file: FileEntity) {
+fun FileItem(
+    file: FileEntity,
+    onFileClick: (FileEntity) -> Unit,
+    onFavoriteToggle: ((FileEntity) -> Unit)? = null
+) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val fileColor = when (file.type) {
         "pdf" -> Danger
@@ -220,13 +295,14 @@ fun FileItem(file: FileEntity) {
         "img" -> Success
         "video" -> Warning
         "audio" -> Primary
-        else -> Secondary
+        "archive" -> Secondary
+        else -> Color.Gray
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { },
+            .clickable { onFileClick(file) },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -246,10 +322,12 @@ fun FileItem(file: FileEntity) {
                 Text(
                     when (file.type) {
                         "pdf" -> "📄"
-                        "doc" -> ""
-                        "img" -> "️"
-                        "video" -> ""
+                        "doc" -> "📝"
+                        "img" -> "🖼️"
+                        "video" -> "🎬"
                         "audio" -> "🎵"
+                        "archive" -> "📦"
+                        "code" -> ""
                         else -> "📎"
                     },
                     fontSize = 22.sp
@@ -276,6 +354,19 @@ fun FileItem(file: FileEntity) {
                     tint = Danger,
                     modifier = Modifier.size(18.dp)
                 )
+            }
+            onFavoriteToggle?.let { toggle ->
+                IconButton(
+                    onClick = { toggle(file) },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        if (file.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = if (file.isFavorite) "إزالة من المفضلة" else "إضافة للمفضلة",
+                        tint = if (file.isFavorite) Danger else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }
