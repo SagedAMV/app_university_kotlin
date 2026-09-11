@@ -1,9 +1,18 @@
 package com.unimanager.app.data.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "files")
+@Entity(
+    tableName = "files",
+    indices = [
+        Index(value = ["name"]),
+        Index(value = ["folderId"]),
+        Index(value = ["createdAt"]),
+        Index(value = ["isFavorite"])
+    ]
+)
 data class FileEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,

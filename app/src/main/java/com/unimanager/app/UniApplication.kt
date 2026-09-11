@@ -1,15 +1,7 @@
 package com.unimanager.app
 
 import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
 
-class UniApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        instance = this
-    }
-
-    companion object {
-        lateinit var instance: UniApplication
-            private set
-    }
-}
+@HiltAndroidApp
+class UniApplication : Application()

@@ -29,39 +29,22 @@ object DatabaseModule {
     }
 
     @Provides
-    fun provideFolderDao(database: AppDatabase): FolderDao {
-        return database.folderDao()
-    }
+    fun provideFolderDao(database: AppDatabase): FolderDao = database.folderDao()
 
     @Provides
-    fun provideFileDao(database: AppDatabase): FileDao {
-        return database.fileDao()
-    }
+    fun provideFileDao(database: AppDatabase): FileDao = database.fileDao()
 
     @Provides
-    fun provideLectureDao(database: AppDatabase): LectureDao {
-        return database.lectureDao()
-    }
+    fun provideLectureDao(database: AppDatabase): LectureDao = database.lectureDao()
 
     @Provides
-    fun provideTaskDao(database: AppDatabase): TaskDao {
-        return database.taskDao()
-    }
+    fun provideTaskDao(database: AppDatabase): TaskDao = database.taskDao()
 
     @Provides
-    fun provideNoteDao(database: AppDatabase): NoteDao {
-        return database.noteDao()
-    }
+    fun provideNoteDao(database: AppDatabase): NoteDao = database.noteDao()
 
     @Provides
-    fun provideExamDao(database: AppDatabase): ExamDao {
-        return database.examDao()
-    }
-}
-
-@Module
-@InstallIn(SingletonComponent::class)
-object RepositoryModule {
+    fun provideExamDao(database: AppDatabase): ExamDao = database.examDao()
 
     @Provides
     @Singleton
