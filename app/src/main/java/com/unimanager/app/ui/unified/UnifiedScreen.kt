@@ -586,7 +586,9 @@ fun TaskItem(task: TaskEntity, onToggle: () -> Unit, onEdit: () -> Unit, onDelet
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .bounceClick(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (task.isDone) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -664,7 +666,9 @@ fun TaskItem(task: TaskEntity, onToggle: () -> Unit, onEdit: () -> Unit, onDelet
 @Composable
 fun LectureItem(lecture: LectureEntity, onEdit: () -> Unit, onDelete: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .bounceClick(),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
