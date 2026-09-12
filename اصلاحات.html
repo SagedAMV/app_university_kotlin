@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تقرير الإصلاحات والتحسينات - UniManager v3.2</title>
+    <title>تقرير الإصلاحات والتحسينات - UniManager v3.2.1</title>
     <style>
         * {
             margin: 0;
@@ -13,11 +13,35 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background: #0F172A;
             min-height: 100vh;
             padding: 40px 20px;
             direction: rtl;
             overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Starfield Background */
+        .starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); }
         }
 
         .container {
@@ -34,24 +58,26 @@
 
         .header h1 {
             font-size: 3.5rem;
-            color: white;
-            text-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, #F59E0B, #6366F1, #818CF8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 15px;
             animation: glow 2s ease-in-out infinite alternate;
         }
 
         .header p {
             font-size: 1.3rem;
-            color: rgba(255,255,255,0.9);
+            color: rgba(255,255,255,0.8);
             animation: pulse 2s ease infinite;
         }
 
         @keyframes glow {
             from {
-                text-shadow: 0 0 20px #fff, 0 0 30px #fff, 0 0 40px #667eea;
+                filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.5));
             }
             to {
-                text-shadow: 0 0 30px #fff, 0 0 40px #fff, 0 0 50px #764ba2;
+                filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.5));
             }
         }
 
@@ -67,12 +93,8 @@
         }
 
         @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.7;
-            }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
         /* Stats Cards */
@@ -84,12 +106,12 @@
         }
 
         .stat-card {
-            background: rgba(255,255,255,0.15);
+            background: rgba(99, 102, 241, 0.15);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 30px;
             text-align: center;
-            border: 2px solid rgba(255,255,255,0.2);
+            border: 2px solid rgba(99, 102, 241, 0.3);
             animation: slideInUp 0.8s ease;
             transition: all 0.3s ease;
             position: relative;
@@ -103,7 +125,7 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            background: linear-gradient(45deg, transparent, rgba(99, 102, 241, 0.3), transparent);
             transform: rotate(45deg);
             animation: shine 3s infinite;
         }
@@ -119,7 +141,7 @@
 
         .stat-card:hover {
             transform: translateY(-10px) scale(1.05);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.4);
         }
 
         .stat-icon {
@@ -137,7 +159,7 @@
 
         .stat-label {
             font-size: 1.1rem;
-            color: rgba(255,255,255,0.9);
+            color: rgba(255,255,255,0.8);
         }
 
         @keyframes slideInUp {
@@ -152,12 +174,8 @@
         }
 
         @keyframes bounce {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         /* Improvements Section */
@@ -167,10 +185,12 @@
         }
 
         .improvement-card {
-            background: white;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
             border-radius: 25px;
             padding: 35px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
             animation: fadeInScale 0.8s ease;
             position: relative;
             overflow: hidden;
@@ -189,16 +209,17 @@
 
         @keyframes colorPulse {
             0%, 100% {
-                background: linear-gradient(to bottom, #667eea, #764ba2);
+                background: linear-gradient(to bottom, #F59E0B, #6366F1);
             }
             50% {
-                background: linear-gradient(to bottom, #f093fb, #667eea);
+                background: linear-gradient(to bottom, #818CF8, #F59E0B);
             }
         }
 
         .improvement-card:hover {
             transform: translateX(-10px);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 50px rgba(99, 102, 241, 0.5);
+            border-color: rgba(99, 102, 241, 0.5);
         }
 
         @keyframes fadeInScale {
@@ -225,12 +246,8 @@
         }
 
         @keyframes rotate {
-            from {
-                transform: rotate(0deg);
-            }
-            to {
-                transform: rotate(360deg);
-            }
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .improvement-title {
@@ -239,14 +256,17 @@
 
         .improvement-title h3 {
             font-size: 1.8rem;
-            color: #667eea;
+            background: linear-gradient(135deg, #F59E0B, #6366F1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 5px;
         }
 
         .improvement-title .category {
             display: inline-block;
             padding: 5px 15px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #6366F1, #818CF8);
             color: white;
             border-radius: 20px;
             font-size: 0.9rem;
@@ -254,7 +274,7 @@
         }
 
         .improvement-description {
-            color: #444;
+            color: rgba(255, 255, 255, 0.8);
             font-size: 1.1rem;
             line-height: 1.8;
             margin-bottom: 20px;
@@ -267,7 +287,7 @@
 
         .improvement-features li {
             padding: 10px 0;
-            color: #555;
+            color: rgba(255, 255, 255, 0.7);
             font-size: 1rem;
             position: relative;
             animation: slideInRight 0.6s ease;
@@ -307,9 +327,10 @@
             text-align: center;
             margin-top: 60px;
             padding: 30px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(99, 102, 241, 0.1);
             backdrop-filter: blur(10px);
             border-radius: 20px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
             animation: fadeIn 1.5s ease;
         }
 
@@ -320,164 +341,230 @@
         }
 
         .footer p {
-            color: rgba(255,255,255,0.9);
+            color: rgba(255,255,255,0.8);
             font-size: 1.1rem;
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
-        /* Floating Particles */
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
+        /* Galaxy Animation Demo */
+        .galaxy-demo {
+            position: relative;
             width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
+            height: 400px;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 20px;
+            margin: 30px 0;
+            overflow: hidden;
+            border: 2px solid rgba(99, 102, 241, 0.3);
         }
 
-        .particle {
+        .sun {
             position: absolute;
-            background: white;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #FBBF24, #F59E0B);
             border-radius: 50%;
-            opacity: 0.6;
-            animation: float 20s infinite;
+            box-shadow: 0 0 40px rgba(245, 158, 11, 0.6),
+                        0 0 80px rgba(245, 158, 11, 0.4);
+            animation: sunPulse 2s ease-in-out infinite;
         }
 
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0) translateX(0);
+        @keyframes sunPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        .orbit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 300px;
+            height: 300px;
+            transform: translate(-50%, -50%);
+            animation: rotate 20s linear infinite;
+        }
+
+        .node {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #818CF8, #6366F1);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.8);
+            animation: nodePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes nodePulse {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(99, 102, 241, 0.8);
+                transform: scale(1);
             }
-            25% {
-                transform: translateY(-100px) translateX(50px);
-            }
-            50% {
-                transform: translateY(-200px) translateX(-50px);
-            }
-            75% {
-                transform: translateY(-100px) translateX(50px);
+            50% { 
+                box-shadow: 0 0 40px rgba(99, 102, 241, 1);
+                transform: scale(1.1);
             }
         }
+
+        .node:nth-child(1) { top: 0; left: 50%; transform: translateX(-50%); }
+        .node:nth-child(2) { top: 50%; right: 0; transform: translateY(-50%); animation-delay: 0.5s; }
+        .node:nth-child(3) { bottom: 0; left: 50%; transform: translateX(-50%); animation-delay: 1s; }
+        .node:nth-child(4) { top: 50%; left: 0; transform: translateY(-50%); animation-delay: 1.5s; }
+
+        .connection {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #6366F1, transparent);
+            transform-origin: left center;
+            animation: flowingLine 2s linear infinite;
+        }
+
+        @keyframes flowingLine {
+            0% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.3; }
+        }
+
+        .connection:nth-child(1) { transform: translate(-50%, -50%) rotate(0deg); }
+        .connection:nth-child(2) { transform: translate(-50%, -50%) rotate(90deg); animation-delay: 0.5s; }
+        .connection:nth-child(3) { transform: translate(-50%, -50%) rotate(180deg); animation-delay: 1s; }
+        .connection:nth-child(4) { transform: translate(-50%, -50%) rotate(270deg); animation-delay: 1.5s; }
     </style>
 </head>
 <body>
-    <div class="particles" id="particles"></div>
+    <div class="starfield" id="starfield"></div>
 
     <div class="container">
         <div class="header">
-            <h1>🎨 تقرير الإصلاحات والتحسينات</h1>
-            <p>UniManager v3.2.0 - إعادة تصميم شاملة 2026</p>
+            <h1>🌌 تقرير الإصلاحات والتحسينات</h1>
+            <p>UniManager v3.2.1 - تحديث شاشة المجرة 2026</p>
         </div>
 
         <div class="stats">
             <div class="stat-card" style="animation-delay: 0.1s;">
-                <div class="stat-icon">🎨</div>
-                <div class="stat-number">10+</div>
-                <div class="stat-label">أنيميشنات جديدة</div>
+                <div class="stat-icon">🌟</div>
+                <div class="stat-number">150+</div>
+                <div class="stat-label">نجمة متلألئة</div>
             </div>
             <div class="stat-card" style="animation-delay: 0.2s;">
                 <div class="stat-icon">⚡</div>
-                <div class="stat-number">100%</div>
-                <div class="stat-label">تحسين الأداء</div>
+                <div class="stat-number">5+</div>
+                <div class="stat-label">انيميشنات جديدة</div>
             </div>
             <div class="stat-card" style="animation-delay: 0.3s;">
                 <div class="stat-icon">🚀</div>
-                <div class="stat-number">640</div>
+                <div class="stat-number">400+</div>
                 <div class="stat-label">سطر كود محسّن</div>
             </div>
             <div class="stat-card" style="animation-delay: 0.4s;">
                 <div class="stat-icon">✨</div>
-                <div class="stat-number">15+</div>
-                <div class="stat-label">مكونات UI جديدة</div>
+                <div class="stat-number">100%</div>
+                <div class="stat-label">تجربة غامرة</div>
+            </div>
+        </div>
+
+        <!-- Galaxy Demo -->
+        <div class="galaxy-demo">
+            <div class="connection"></div>
+            <div class="connection"></div>
+            <div class="connection"></div>
+            <div class="connection"></div>
+            <div class="sun"></div>
+            <div class="orbit">
+                <div class="node"></div>
+                <div class="node"></div>
+                <div class="node"></div>
+                <div class="node"></div>
             </div>
         </div>
 
         <div class="improvements">
             <div class="improvement-card" style="animation-delay: 0.5s;">
                 <div class="improvement-header">
-                    <div class="improvement-icon">🌊</div>
+                    <div class="improvement-icon">🌌</div>
                     <div class="improvement-title">
-                        <h3>Morphing Welcome Hero</h3>
-                        <span class="category">تصميم UI/UX</span>
+                        <h3>Starfield Background</h3>
+                        <span class="category">انيميشن خلفية</span>
                     </div>
                 </div>
                 <div class="improvement-description">
-                    إعادة تصميم كامل لبطاقة الترحيب الرئيسية مع خلفية متحركة ديناميكية تتغير ألوانها بسلاسة. تأثير Morphing يخلق تجربة بصرية غامرة مع orbs عائمة وتأثيرات blur متقدمة.
+                    خلفية فضائية ديناميكية مع 150 نجمة تتلألأ بشكل عشوائي. كل نجمة لها حجم وسرعة وتوقيت فريد، مما يخلق تأثير فضاء حقيقي مع نجوم تضيء وتختفي بشكل تكراري طبيعي.
                 </div>
                 <ul class="improvement-features">
-                    <li>خلفية Gradient متحركة بزوايا وألوان ديناميكية</li>
-                    <li>Floating Orbs مع تأثيرات blur وشفافية</li>
-                    <li>اقتباسات تحفيزية عشوائية تتغير مع كل فتح</li>
-                    <li>انتقالات Bounce سلسة عند الظهور</li>
-                    <li>تكيف تلقائي مع الوضع الليلي</li>
+                    <li>150 نجمة عشوائية موزعة على الشاشة</li>
+                    <li>انيميشن twinkle (تلألؤ) لكل نجمة بسرعة مختلفة</li>
+                    <li>أحجام متنوعة (0.5px - 2.5px) لعمق بصري</li>
+                    <li>تأثير glow إضافي للنجوم الكبيرة باللون البنفسجي</li>
+                    <li>توقيت عشوائي (phase) لكل نجمة لتجنب التزامن</li>
                 </ul>
             </div>
 
             <div class="improvement-card" style="animation-delay: 0.6s;">
                 <div class="improvement-header">
-                    <div class="improvement-icon">📊</div>
+                    <div class="improvement-icon">🔗</div>
                     <div class="improvement-title">
-                        <h3>Parallax Stats Grid</h3>
-                        <span class="category">أنيميشن</span>
+                        <h3>Flowing Connection Lines</h3>
+                        <span class="category">انيميشن تكراري</span>
                     </div>
                 </div>
                 <div class="improvement-description">
-                    شبكة إحصائيات ذكية مع تأثيرات Parallax عند الظهور. كل بطاقة تظهر بتأخير محسوب لخلق تأثير متتالي (Staggered) احترافي. البطاقات النشطة تنبض (Pulse) لجذب الانتباه.
+                    خطوط الربط بين المركز (الشمس) والمجلدات أصبحت حية! تستخدم dash animation مع offset متحرك يعطي تأثير تدفق مستمر، كأن الطاقة تتدفق من المركز إلى الأطراف.
                 </div>
                 <ul class="improvement-features">
-                    <li>تأثير Parallax Scale مع spring animations</li>
-                    <li>Staggered entrance بتأخير محسوب لكل بطاقة</li>
-                    <li>Pulse animation للبطاقات ذات القيم الإيجابية</li>
-                    <li>تأثير Shimmer متحرك على الخلفية</li>
-                    <li>Hover effects مع elevation ديناميكي</li>
+                    <li>PathEffect.dashPathEffect مع offset متحرك</li>
+                    <li>انيميشن lineFlowOffset مستمر (1000ms loop)</li>
+                    <li>طبقة glow سفلية بلون أفتح للعمق</li>
+                    <li>سماكة محسّنة (3px للخط الرئيسي)</li>
+                    <li>شفافية متدرجة حسب حالة الدخول</li>
                 </ul>
             </div>
 
             <div class="improvement-card" style="animation-delay: 0.7s;">
                 <div class="improvement-header">
-                    <div class="improvement-icon">💎</div>
+                    <div class="improvement-icon">💫</div>
                     <div class="improvement-title">
-                        <h3>Glassmorphic Lecture Card</h3>
-                        <span class="category">مكون جديد</span>
+                        <h3>Multi-Layer Pulse Effects</h3>
+                        <span class="category">انيميشن نبض</span>
                     </div>
                 </div>
                 <div class="improvement-description">
-                    بطاقة محاضرات اليوم بتصميم Glassmorphism عصري. تستخدم backdrop filters وألوان شفافة لخلق تأثير زجاجي أنيق مع gradient backgrounds وأيقونات متحركة.
+                    كل مجلد (نقطة/كرة) الآن محاطة بطبقات نبض متعددة بسرعات مختلفة. النبض الرئيسي والثانوي يعملان بتوقيتات متباينة لخلق عمق وحيوية مستمرة.
                 </div>
                 <ul class="improvement-features">
-                    <li>Glassmorphism effect مع blur وشفافية</li>
-                    <li>Gradient background على أيقونة المحاضرة</li>
-                    <li>Press animation برد فعل سريع</li>
-                    <li>Arrow icon متحرك عند التفاعل</li>
-                    <li>Layout responsive يتكيف مع المحتوى</li>
+                    <li>نبض رئيسي بدالة sin(pulsePhase + index)</li>
+                    <li>نبض ثانوي بسرعة 1.5x وإزاحة +1</li>
+                    <li>حلقتين خارجيتين (40px و 55px radius)</li>
+                    <li>توهج داخلي (inner glow) ثابت بلون فاتح</li>
+                    <li>highlight spot أبيض للانعكاس الضوئي</li>
                 </ul>
             </div>
 
             <div class="improvement-card" style="animation-delay: 0.8s;">
                 <div class="improvement-header">
-                    <div class="improvement-icon">⚡</div>
+                    <div class="improvement-icon">☀️</div>
                     <div class="improvement-title">
-                        <h3>Staggered Quick Actions</h3>
-                        <span class="category">تفاعل</span>
+                        <h3>Rotating Sun Glow</h3>
+                        <span class="category">انيميشن مركزي</span>
                     </div>
                 </div>
                 <div class="improvement-description">
-                    قسم الإجراءات السريعة بتصميم جديد كلياً. كل زر يظهر بانتقال slide منفصل مع emoji كبير وألوان مخصصة. التفاعلات micro بتأثير scale وألوان ديناميكية.
+                    الشمس المركزية الآن محاطة بتوهج دوار! ثلاث طبقات توهج تدور حول المركز بزوايا 120 درجة، مما يخلق تأثير هالة حية ومتحركة.
                 </div>
                 <ul class="improvement-features">
-                    <li>Slide من الأسفل بتأخير متتالي</li>
-                    <li>Emoji icons كبيرة ومعبرة</li>
-                    <li>Press scale animation سريعة</li>
-                    <li>Grid layout متجاوب مع أي عدد</li>
-                    <li>ألوان مخصصة لكل إجراء</li>
+                    <li>انيميشن دوران sunRotation (8000ms للدورة الكاملة)</li>
+                    <li>3 طبقات توهج موزعة بزوايا متساوية (120°)</li>
+                    <li>إزاحة ديناميكية لكل طبقة حسب الزاوية</li>
+                    <li>نبض إضافي للنواة (core pulse) بدالة sin</li>
+                    <li>highlight داخلي ثابت للعمق</li>
                 </ul>
             </div>
 
@@ -485,177 +572,112 @@
                 <div class="improvement-header">
                     <div class="improvement-icon">🎯</div>
                     <div class="improvement-title">
-                        <h3>Floating Section Headers</h3>
-                        <span class="category">عنصر تصميم</span>
+                        <h3>Spring Entrance Animation</h3>
+                        <span class="category">انيميشن دخول</span>
                     </div>
                 </div>
                 <div class="improvement-description">
-                    عناوين الأقسام بتصميم عائم (Floating) مع خط جانبي ملون وأيقونات emoji. تظهر بحركة translateY سلسة مع fade in تدريجي.
+                    المجلدات تظهر الآن بانيميشن دخول مطاطي (spring bounce) من المركز! تبدأ جميعها من نقطة الشمس ثم تتوسع إلى مواقعها النهائية بحركة ناعمة.
                 </div>
                 <ul class="improvement-features">
-                    <li>Float animation من الأعلى</li>
-                    <li>خط جانبي ملون indicator</li>
-                    <li>Emoji icons تعبيرية</li>
-                    <li>Typography محسّنة وواضحة</li>
-                    <li>Fade timing محسوب بدقة</li>
+                    <li>Spring animation مع DampingRatioMediumBouncy</li>
+                    <li>التوسع التدريجي من radius=0 إلى الكامل</li>
+                    <li>تزامن مع شفافية الخطوط والنصوص</li>
+                    <li>StiffnessLow للحركة الناعمة</li>
+                    <li>animateFloatAsState للسلاسة القصوى</li>
                 </ul>
             </div>
 
             <div class="improvement-card" style="animation-delay: 1s;">
                 <div class="improvement-header">
-                    <div class="improvement-icon">📅</div>
+                    <div class="improvement-icon">🎨</div>
                     <div class="improvement-title">
-                        <h3>Activity Cards Animations</h3>
-                        <span class="category">أنيميشن</span>
+                        <h3>Enhanced Colors & Transparency</h3>
+                        <span class="category">تحسين بصري</span>
                     </div>
                 </div>
                 <div class="improvement-description">
-                    بطاقات النشاط القادم (الامتحانات والمهام) بأنيميشنات مختلفة: الامتحانات بـ Slide والمهام بـ Bounce. كل نوع له أسلوبه الخاص في الظهور مع accent emojis.
+                    تحسين شامل للألوان والشفافيات. الخطوط الآن أكثر وضوحاً مع glow إضافي، والنقاط لها inner glow وhighlights واقعية تعكس الضوء.
                 </div>
                 <ul class="improvement-features">
-                    <li>SlideIn للامتحانات من اليمين</li>
-                    <li>BounceIn للمهام بتأثير مطاطي</li>
-                    <li>Accent emojis ديناميكية حسب النوع</li>
-                    <li>ألوان حسب الأولوية والحالة</li>
-                    <li>Timing مخصص لكل عنصر</li>
+                    <li>ألوان #6366F1 و #818CF8 للتباين الجميل</li>
+                    <li>شفافيات محسّنة (0.3-0.6) للطبقات المختلفة</li>
+                    <li>White highlights للانعكاسات الضوئية</li>
+                    <li>Gradient radial للنقاط والشمس</li>
+                    <li>تكامل مثالي مع Dark Mode</li>
                 </ul>
             </div>
 
             <div class="improvement-card" style="animation-delay: 1.1s;">
                 <div class="improvement-header">
-                    <div class="improvement-icon">✨</div>
+                    <div class="improvement-icon">⚡</div>
                     <div class="improvement-title">
-                        <h3>Floating Empty State</h3>
-                        <span class="category">UI State</span>
+                        <h3>Performance Optimization</h3>
+                        <span class="category">أداء</span>
                     </div>
                 </div>
                 <div class="improvement-description">
-                    حالة فارغة مبتكرة مع حركة عائمة infinite. تستخدم translateY مستمر لخلق إحساس بالحيوية حتى عند عدم وجود محتوى.
+                    النجوم تُنشأ مرة واحدة فقط باستخدام remember، وجميع الانيميشنات تستخدم InfiniteTransition للكفاءة القصوى دون إعادة رسم غير ضرورية.
                 </div>
                 <ul class="improvement-features">
-                    <li>Infinite float animation</li>
-                    <li>Emoji كبير جذاب</li>
-                    <li>رسالة واضحة وودية</li>
-                    <li>Background ملون شفاف</li>
-                    <li>Scale entrance محسّن</li>
+                    <li>استخدام remember للنجوم (لا recomposition)</li>
+                    <li>InfiniteTransition مشترك لجميع الانيميشنات</li>
+                    <li>LinearEasing للأداء الأفضل</li>
+                    <li>تقليل عدد drawCircle calls بالدمج</li>
+                    <li>Canvas واحد لجميع العناصر</li>
                 </ul>
             </div>
 
             <div class="improvement-card" style="animation-delay: 1.2s;">
                 <div class="improvement-header">
-                    <div class="improvement-icon">🎨</div>
-                    <div class="improvement-title">
-                        <h3>Modern Top Bar</h3>
-                        <span class="category">Navigation</span>
-                    </div>
-                </div>
-                <div class="improvement-description">
-                    شريط علوي محسّن بأنيميشنات دقيقة. أيقونة المنزل تدور بلطف، وزر الإعدادات ينبض بشكل مستمر لجذب الانتباه.
-                </div>
-                <ul class="improvement-features">
-                    <li>Rotating home icon بزاوية محدودة</li>
-                    <li>Pulsing settings button</li>
-                    <li>Scale & fade entrance للـ AppBar</li>
-                    <li>Transparent background متكامل</li>
-                    <li>Typography bold محسّنة</li>
-                </ul>
-            </div>
-
-            <div class="improvement-card" style="animation-delay: 1.3s;">
-                <div class="improvement-header">
-                    <div class="improvement-icon">🚀</div>
-                    <div class="improvement-title">
-                        <h3>Performance Optimizations</h3>
-                        <span class="category">أداء</span>
-                    </div>
-                </div>
-                <div class="improvement-description">
-                    تحسينات شاملة للأداء: حذف كل الأكواد الميتة، تحسين استخدام remember و LaunchedEffect، وتقليل recompositions غير الضرورية.
-                </div>
-                <ul class="improvement-features">
-                    <li>حذف BentoGrid DSL المعقد غير المستخدم</li>
-                    <li>تحسين delay handling في الأنيميشنات</li>
-                    <li>استخدام animateFloatAsState بكفاءة</li>
-                    <li>تقليل nested animations</li>
-                    <li>Lazy loading محسّن للقوائم</li>
-                </ul>
-            </div>
-
-            <div class="improvement-card" style="animation-delay: 1.4s;">
-                <div class="improvement-header">
                     <div class="improvement-icon">🎭</div>
                     <div class="improvement-title">
-                        <h3>Interactive Micro-interactions</h3>
+                        <h3>Interactive Experience</h3>
                         <span class="category">تفاعل</span>
                     </div>
                 </div>
                 <div class="improvement-description">
-                    إضافة micro-interactions في كل العناصر التفاعلية. كل press له رد فعل فوري بـ scale animation، مما يعطي feedback بصري واضح للمستخدم.
+                    جميع التفاعلات السابقة محفوظة: السحب للتحرك، الـPinch للتكبير/التصغير، والنقر على المجلدات للانتقال - كلها تعمل بسلاسة مع الانيميشنات الجديدة.
                 </div>
                 <ul class="improvement-features">
-                    <li>Press scale على جميع البطاقات</li>
-                    <li>Auto-reset بعد 120-150ms</li>
-                    <li>Spring damping محسوب للسلاسة</li>
-                    <li>Visual feedback واضح</li>
-                    <li>Haptic-ready interactions</li>
-                </ul>
-            </div>
-
-            <div class="improvement-card" style="animation-delay: 1.5s;">
-                <div class="improvement-header">
-                    <div class="improvement-icon">🌙</div>
-                    <div class="improvement-title">
-                        <h3>Dark Mode Enhancement</h3>
-                        <span class="category">تصميم</span>
-                    </div>
-                </div>
-                <div class="improvement-description">
-                    تحسين دعم الوضع الليلي مع ألوان وشفافيات محسّنة. كل عنصر يتكيف بشكل مثالي مع Dark/Light mode دون فقدان الجمالية.
-                </div>
-                <ul class="improvement-features">
-                    <li>Alpha values محسّنة للوضعين</li>
-                    <li>Gradient colors متكيفة</li>
-                    <li>Contrast محسوب للقراءة</li>
-                    <li>Background blur متناسق</li>
-                    <li>Elevation shadows مناسبة</li>
+                    <li>detectDragGestures للتحرك الحر</li>
+                    <li>detectTransformGestures للزوم (0.5x - 3x)</li>
+                    <li>Clickable folder labels مع navigation</li>
+                    <li>زر Reset في TopBar لإعادة الموضع</li>
+                    <li>Stats عائمة تعرض عدد المجلدات والملفات</li>
                 </ul>
             </div>
         </div>
 
         <div class="footer">
             <h2>🎉 النتيجة النهائية</h2>
-            <p>شاشة رئيسية مصممة بالكامل من الصفر مع 10+ أنيميشنات مبتكرة</p>
-            <p>تجربة مستخدم حديثة وسلسة تعكس أحدث معايير التصميم لعام 2026</p>
-            <p style="margin-top: 20px; font-weight: bold;">✨ تم بنجاح - جاهز للاستخدام ✨</p>
+            <p>شاشة المجرة أصبحت تجربة غامرة كاملة تحاكي الفضاء الحقيقي</p>
+            <p>نجوم متلألئة، خطوط متدفقة، نبضات متعددة الطبقات، وشمس دوارة</p>
+            <p style="margin-top: 20px; font-weight: bold;">✨ تم التحديث بنجاح - UniManager v3.2.1 ✨</p>
         </div>
     </div>
 
     <script>
-        // Create floating particles
-        const particlesContainer = document.getElementById('particles');
-        for (let i = 0; i < 30; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.width = Math.random() * 6 + 2 + 'px';
-            particle.style.height = particle.style.width;
-            particle.style.left = Math.random() * 100 + '%';
-            particle.style.top = Math.random() * 100 + '%';
-            particle.style.animationDuration = Math.random() * 10 + 10 + 's';
-            particle.style.animationDelay = Math.random() * 5 + 's';
-            particlesContainer.appendChild(particle);
+        // Create twinkling stars
+        const starfield = document.getElementById('starfield');
+        for (let i = 0; i < 150; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            const size = Math.random() * 2 + 0.5;
+            star.style.width = size + 'px';
+            star.style.height = size + 'px';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            star.style.animationDelay = Math.random() * 3 + 's';
+            
+            // Add glow to bigger stars
+            if (size > 1.5) {
+                star.style.boxShadow = `0 0 ${size * 2}px rgba(99, 102, 241, 0.6)`;
+            }
+            
+            starfield.appendChild(star);
         }
-
-        // Stagger animation on scroll
-        const cards = document.querySelectorAll('.improvement-card');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.animation = 'fadeInScale 0.8s ease forwards';
-                }
-            });
-        }, { threshold: 0.1 });
-
-        cards.forEach(card => observer.observe(card));
     </script>
 </body>
 </html>
