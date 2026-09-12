@@ -479,7 +479,7 @@ private fun ParallaxStatCard(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow,
             visibilityThreshold = 0.01f
-        ).also { kotlinx.coroutines.delay(delay.toLong()) },
+        ),
         label = "statScale"
     )
 
@@ -561,7 +561,7 @@ private fun GlassmorphicLectureCard(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
-        ).also { kotlinx.coroutines.delay(520) },
+        ),
         label = "glassScale"
     )
 
@@ -721,7 +721,7 @@ private fun StaggeredActionCard(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
-        ).also { kotlinx.coroutines.delay(delay.toLong()) },
+        ),
         label = "actionSlide"
     )
 
@@ -799,7 +799,7 @@ private fun FloatingSectionHeader(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
-        ).also { kotlinx.coroutines.delay(650) },
+        ),
         label = "headerFloat"
     )
 
@@ -849,7 +849,7 @@ private fun SlideInActivityCard(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
-        ).also { kotlinx.coroutines.delay(delay.toLong()) },
+        ),
         label = "activitySlide"
     )
 
@@ -920,7 +920,7 @@ private fun BounceInTaskCard(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessMedium
-        ).also { kotlinx.coroutines.delay(delay.toLong()) },
+        ),
         label = "taskBounce"
     )
 
@@ -1015,7 +1015,7 @@ private fun FloatingEmptyState(visible: Boolean) {
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
-        ).also { kotlinx.coroutines.delay(750) },
+        ),
         label = "emptyScale"
     )
 
