@@ -502,6 +502,7 @@ private fun ParallaxStatCard(
 
     Card(
         modifier = modifier
+            .bounceClick()
             .scale(scale * pulseScale)
             .alpha(alpha),
         shape = RoundedCornerShape(24.dp),
@@ -582,6 +583,7 @@ private fun GlassmorphicLectureCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .bounceClick()
             .scale(scale * pressScale)
             .clickable {
                 isPressed = true
@@ -748,6 +750,7 @@ private fun StaggeredActionCard(
     Card(
         modifier = modifier
             .aspectRatio(1f)
+            .bounceClick()
             .graphicsLayer {
                 translationY = slideOffset.toFloat()
             }

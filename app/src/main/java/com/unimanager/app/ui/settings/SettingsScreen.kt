@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.os.Build
+import com.unimanager.app.ui.components.bounceClick
 import com.unimanager.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -153,6 +154,7 @@ fun SettingsItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .bounceClick()
             .clickable(onClick = onClick)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -196,6 +198,7 @@ fun ThemeToggleItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .bounceClick()
             .clickable { onCheckedChange(!isChecked) }
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
