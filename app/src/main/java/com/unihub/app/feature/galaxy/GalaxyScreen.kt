@@ -1,0 +1,717 @@
+package com.unihub.app.feature.galaxy
+
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.AbsoluteAlignment
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unihub.app.data.local.model.FolderWithFileCount
+import com.unihub.app.ui.theme.toComposeColor
+import kotlin.math.PI
+import kotlin.math.sin
+import kotlin.math.sqrt
+import kotlin.random.Random
+
+/**
+ * مجرّة «زخات الشهب» — التصميم المختار رقم 17 من استوديو التصاميم
+ * (ملف اختيارات.MD) مع تحسينات الجلسة:
+ *
+ * 1) السماء: شهب ذهبية بطيئة ومتباعدة تعبر الخلفية (طبقة Canvas ثابتة)،
+ *    مع نجوم تومض بهدوء — مشهد حي دون تشتيت وبلا استهلاك عالٍ للبطارية.
+ *
+ * 2) العناقيد: كل مجلد جذر «كوكب أم» في مركز عنقوده:
+ *    - بلا مجلدات فرعية: تحرسه حلقة واقية (كما في مقترح زخات الشهب).
+ *    - بمجلدات فرعية: أبناؤه كواكب صغيرة موزّعة على مدار حوله بزوايا متساوية
+ *      حسابياً (مسافة مضمونة بين الكواكب بلا تداخل مهما كثر عددها)،
+ *      خيوط رفيعة تربط كل ابن بأمه، ودائرة حاضنة تحصر العائلة كلها بلون الأم.
+ *
+ * 3) المسافات (إعادة بناء هذه الجلسة — طلب تعليمات.md): التخطيط أصبح واعياً
+ *    بأبعاد الشاشة وبععدد العناقيد فعلياً: عدد الأعمدة/الصفوف وحجم الخلية
+ *    يُشتقان من المساحة المتاحة، فتكبر العناقيد عندما يقلّ عددها وتصغر عندما
+ *    يكثر — وكل عنقود يُحجَّم بمعامل موحّد يحفظ النسب بين بنية الأم والأبناء.
+ *
+ * 4أ) إصلاح جلسة اليوم (تعليمات.md — «إذا كثرت مجلدات الأبناء تظهر ملفات
+ *    خارج الدائرة»): حسابات الأنصاف كلها في مصدر واحد [GalaxyGeometry]،
+ *    والدائرة الحاضنة تحصر العمود كاملاً بحدّ رياضي مضمون لأي زاوية.
+ *    المحاكاة الرقمية في هذه الجلسة كشفت أن الحدّ السابق كان يستند إلى
+ *    افتراض ارتفاع تسمية 36 نقطة فقط (هامش 6 فقط)، بينما النص العربي مع
+ *    حشوة الخط الافتراضية وتكبير حجم الخط يتجاوز ذلك فيخترق النص الدائرة
+ *    — وكلما كثر الأبناء ظهر الخرق أكثر. الإصلاح الجذري: كتلة التسمية في
+ *    [PlanetColumn] صارت صندوقاً بارتفاع ثابت مقصوصاً ([GalaxyGeometry]
+ *    .LABELS_BOX_DP) بنصّين بارتفاع سطر مثبت وبلا حشوة خط، فصار الارتفاع
+ *    حقيقة مضمونة على أي جهاز — والحدّ الرياضي مضموناً فعلاً لا افتراضاً.
+ *
+ * 4) التنقل داخل المجرّة: قرص للتكبير/التصغير وسحب للتحرك،
+ *    بتكبير مثبّت على مركز القرصة نفسه (لا قفزات لأماكن غريبة)، ونقرة مزدوجة
+ *    لإعادة الملاءمة. أدنى تكبير مسموح = ملاءمة المحتوى كله للشاشة، فلا يضيع
+ *    أي مجلد مهما كثرت البيانات. وإن فاق المحتوى الشاشة (بيانات كثيرة) تبدأ
+ *    المجرة بملاءمة تلقائية مصغَّرة تظهر فيها كل العناقيد، ثم يقرّب المستخدم
+ *    بإصبعيه ما يشاء — صغرٌ تلقائي يتناسب مع العدد كما طلبت تعليمات.md.
+ *
+ * 5) إصلاح جلسة اليوم (تعليمات.md — «تظهر أشكال المجلدات لكن ليس داخل
+ *    دائرتها المخصصة، منزاحة عن المنتصف»): الثغرة ازدواجُ لغتين إحداثيتين
+ *    في مشهد واحد. طبقة الرسم (Canvas) مطلقة لا تنعكس أبداً، بينما طبقة
+ *    الوضع كانت تجمع نقطة أصل حسّاسة للاتجاه — Alignment.TopStart
+ *    الافتراضية في Box، وهي BiasAlignment(-1,-1) تنقلب إلى أعلى-اليمين على
+ *    RTL — مع إزاحة مطلقة فوقها. فينزاح الكوكب عن مركز دائرته بمقدار
+ *    (عرض الحاوية − عرض العمود).
+ *
+ *    تصحيح توثيقي مهم: محاولة سابقة استبدلت offset بـ absoluteOffset وحدها
+ *    ووثّقت ذلك كإصلاح كامل — وهو غير صحيح. absoluteOffset تثبّت مقدار
+ *    الإزاحة فقط ولا تمسّ أصل الوضع الموروث من المحاذاة؛ بل إن النسخة
+ *    الأقدم (offset مع TopStart) كانت سليمة عرَضاً لأن الانعكاسين كانا
+ *    يُلغي أحدهما الآخر، فجاء التبديل الجزئي تراجعاً لا إصلاحاً.
+ *
+ *    الإصلاح المعتمد هنا — إزالة السبب لا موازنته: كل موضع يُحسب نسبةً إلى
+ *    **مركز** حاويته مع Alignment.Center، لأن انحياز المركز صفر وصفرٌ لا
+ *    ينقلب بالنفي فيصير محايداً رياضياً لأي اتجاه (انظر الاشتقاق في
+ *    GalaxyGeometry). ويُستثنى من ذلك حاوية الإيماءات التي تضع لوح المحتوى:
+ *    حصر السحب وأصل التحجيم TransformOrigin(0,0) مبنيان على أصل يساري
+ *    علوي، فتُفرض عليها AbsoluteAlignment.TopLeft الفيزيائية. وتبقى النصوص
+ *    داخل التسميات RTL طبيعية دون أي تأثير.
+ *
+ * كل الألوان من لوحة الشاشة/السمة الحالية — لا لون جديداً واحداً.
+ */
+@Composable
+fun GalaxyScreen(
+    onOpenFolder: (Long) -> Unit,
+    viewModel: GalaxyViewModel = hiltViewModel()
+) {
+    val clusters by viewModel.clusters.collectAsStateWithLifecycle()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF101614),
+                        Color(0xFF182220),
+                        Color(0xFF101614)
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        // سماء الشهب تُرى دائماً — حتى والمجرة فارغة تبقى السماء حيّة
+        MeteorBackground(Modifier.matchParentSize())
+
+        if (clusters.isEmpty()) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "المجرّة",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Color(0xFFE0E5E1)
+                )
+                Spacer(Modifier.height(24.dp))
+                Icon(
+                    imageVector = Icons.Outlined.Public,
+                    contentDescription = null,
+                    tint = Color(0xFFA9B4AD),
+                    modifier = Modifier.size(44.dp)
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "مجرتك فارغة",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color(0xFFE0E5E1),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "أنشئ مجلدات لموادك في شاشة الملفات وستظهر هنا ككواكب تحرسها حلقات تحت سماء الشهب، وتتجمع مجلداتك الفرعية حول أمها داخل دائرة واحدة",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFA9B4AD),
+                    textAlign = TextAlign.Center
+                )
+            }
+            return@Box
+        }
+
+        GalaxyClusters(clusters = clusters, onOpenFolder = onOpenFolder)
+
+        Text(
+            text = "اضغط أي كوكب لفتح مجلده — قرّب بالقرص واسحب للتحرك، ونقرة مزدوجة لإعادة الملاءمة",
+            style = MaterialTheme.typography.labelMedium,
+            color = Color(0xFFA9B4AD),
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 16.dp, vertical = 16.dp)
+        )
+    }
+}
+
+// ثوابت طبقة العرض التفاعلية (قرص/سحب) — ثوابت الشبكة نفسها انتقلت إلى
+// [GalaxyLayoutEngine] مع بقية الدوال النقية القابلة للاختبار على JVM.
+private const val GALAXY_KEEP_VISIBLE_DP = 56f
+private const val GALAXY_MAX_ZOOM = 5f
+
+// نموذج [GalaxyLayout] ودالة [computeGalaxyLayout] انتقلا كما هما إلى
+// [GalaxyLayoutEngine] — نفس الحزمة، فالاستدعاء أدناه بلا أي تغيير.
+
+/**
+ * حصر إزاحة المحتوى بحيث يبقى شريط منه ظاهراً دائماً على الشاشة — فلا
+ * يستطيع المستخدم أن «يضيع» المجرّة خارج حدود النظر مهما سحب.
+ */
+private fun clampGalaxyTranslation(
+    translation: Offset,
+    scaledWidthPx: Float,
+    scaledHeightPx: Float,
+    viewportWidthPx: Float,
+    viewportHeightPx: Float,
+    keepVisiblePx: Float
+): Offset {
+    val minX = keepVisiblePx - scaledWidthPx
+    val maxX = viewportWidthPx - keepVisiblePx
+    val minY = keepVisiblePx - scaledHeightPx
+    val maxY = viewportHeightPx - keepVisiblePx
+    return Offset(
+        x = translation.x.coerceIn(minOf(minX, maxX), maxOf(minX, maxX)),
+        y = translation.y.coerceIn(minOf(minY, maxY), maxOf(minY, maxY))
+    )
+}
+
+/**
+ * طبقة العناقيد — إعادة بناء هذه الجلسة (إصلاح جذري لطلب تعليمات.md).
+ *
+ * المشكلة الجذرية في النسخة السابقة: العناقيد كانت تُصفّ عبر offset() داخل
+ * صندوق بحجم الشاشة نفسه مع تمرير عمودي — لكن offset لا يمدّ ارتفاع المحتوى
+ * المقاس، فكان مدى التمرير صفراً وتُقصّ كل الصفوف بعد ما تسعه الشاشة (تظهر
+ * 4 مجلدات من 8 ولا سبيل للبقية). كما أن حجم الخلية كان ثابتاً لا يعرف عدد
+ * العناقيد ولا أبعاد الشاشة إطلاقاً.
+ *
+ * الحل هنا: محتوى بحجم محسوب صراحةً (يُمدّ القياس الحقيقي)، تخطيط واعٍ
+ * بالشاشة والعدد (انظر [computeGalaxyLayout])، وطبقة تحويل للقرص والسحب
+ * بتكبير مثبّت على مركز القرصة.
+ */
+@Composable
+private fun GalaxyClusters(
+    clusters: List<GalaxyCluster>,
+    onOpenFolder: (Long) -> Unit
+) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val viewportWidthPx = with(density) { maxWidth.toPx() }
+        val viewportHeightPx = with(density) { maxHeight.toPx() }
+
+        val layout = remember(clusters, viewportWidthPx, viewportHeightPx) {
+            computeGalaxyLayout(clusters, viewportWidthPx, viewportHeightPx, density.density)
+        }
+        val contentWidthPx = layout.contentWidthPx
+        val contentHeightPx = layout.contentHeightPx
+
+        // حالة العرض: معامل التكبير وإزاحة المحتوى. الحسابات كلها على نقطة
+        // الأصل (0،0) — لذلك يوضع في graphicsLayer أدناه
+        // [TransformOrigin(0,0)]. هذا هو سر التكبير بلا قفزات: مع الأصل
+        // المركزي الافتراضي تتحرك الصورة «تحت الأصابع» فيظن المستخدم أن
+        // القرص نقله لمكان غريب (الشكوى في تعليمات.md).
+        var scale by remember { mutableFloatStateOf(1f) }
+        var translation by remember { mutableStateOf(Offset.Zero) }
+        var userAdjusted by remember { mutableStateOf(false) }
+
+        val minScale = layout.fitAllScale
+        val keepVisiblePx = GALAXY_KEEP_VISIBLE_DP * density.density
+
+        // تمركز أولي (وإعادة تمركز عند تغيّر بنية المحتوى) ما لم يكن المستخدم
+        // قد حرّك المجرة بنفسه — حتى لا يقفز العرض تحت يده بعد كل تعديل.
+        // الملاءمة التلقائية الأولية (طلب تعليمات.md — «اذا بيانات اصبحت كثيرة
+        // التطبيق سيقوم بتصغيرها تلقائيا حتى تتناسب مع الشاشة»): إن فاق المحتوى
+        // الشاشة يُبدَأ بمعامل ملاءمة الكل فيظهر كل مجلد مصغّراً، ومن هناك
+        // يقرّب المستخدم بالقرص ما يشاء. وإن كان المحتوى يسع الشاشة فمقياس 1.
+        LaunchedEffect(contentWidthPx, contentHeightPx) {
+            if (!userAdjusted) {
+                val fits = contentWidthPx <= viewportWidthPx &&
+                    contentHeightPx <= viewportHeightPx
+                scale = if (fits) 1f else layout.fitAllScale
+                translation = Offset(
+                    x = ((viewportWidthPx - contentWidthPx * scale) / 2f).coerceAtLeast(0f),
+                    y = ((viewportHeightPx - contentHeightPx * scale) / 2f).coerceAtLeast(0f)
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clipToBounds()
+                // قرص للتكبير + إصبع/إصبعان للسحب. معادلة التثبيت على مركز
+                // القرصة: النقطة التي تحت الأصابع تبقى تحت الأصابع بعد تغيير
+                // المقياس، ثم تُضاف إزاحة السحب، ثم الحصر الآمن.
+                .pointerInput(contentWidthPx, contentHeightPx) {
+                    detectTransformGestures { centroid, pan, zoom, _ ->
+                        userAdjusted = true
+                        val newScale = (scale * zoom).coerceIn(minScale, GALAXY_MAX_ZOOM)
+                        val applied = newScale / scale
+                        translation = centroid - (centroid - translation) * applied + pan
+                        scale = newScale
+                        translation = clampGalaxyTranslation(
+                            translation = translation,
+                            scaledWidthPx = contentWidthPx * scale,
+                            scaledHeightPx = contentHeightPx * scale,
+                            viewportWidthPx = viewportWidthPx,
+                            viewportHeightPx = viewportHeightPx,
+                            keepVisiblePx = keepVisiblePx
+                        )
+                    }
+                }
+                // نقرة مزدوجة: إعادة الملاءمة — إن كان المحتوى أكبر من الشاشة
+                // يُصغَّر حتى يظهر كله، وإلا عاد لمقياس 1 متمركزاً.
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = {
+                            userAdjusted = true
+                            scale = layout.fitAllScale
+                            translation = Offset(
+                                x = ((viewportWidthPx - contentWidthPx * scale) / 2f)
+                                    .coerceAtLeast(0f),
+                                y = ((viewportHeightPx - contentHeightPx * scale) / 2f)
+                                    .coerceAtLeast(0f)
+                            )
+                        }
+                    )
+                },
+            // حاوية الإيماءات تضع **لوح المحتوى** كاملاً. هنا لا يصلح التمركز:
+            // حصر السحب (clampGalaxyTranslation) وأصل التحجيم
+            // TransformOrigin(0,0) كلاهما مبني على أصل يساري علوي. ومحاذاة
+            // TopStart الافتراضية تنقلب إلى اليمين على RTL فينزاح اللوح كله.
+            // العلاج: محاذاة فيزيائية مطلقة لا تنقلب بأي اتجاه.
+            // (ملاحظة: الاسم الصحيح AbsoluteAlignment.TopLeft — لا يوجد
+            //  Alignment.TopLeft في واجهة Compose إطلاقاً.)
+            contentAlignment = AbsoluteAlignment.TopLeft
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(
+                        width = with(density) { contentWidthPx.toDp() },
+                        height = with(density) { contentHeightPx.toDp() }
+                    )
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        translationX = translation.x
+                        translationY = translation.y
+                        transformOrigin = TransformOrigin(0f, 0f)
+                    },
+                // نقطة أصل محايدة لاتجاه التخطيط: انحياز المركز صفر فلا
+                // ينقلب في RTL، بعكس TopStart الافتراضية — انظر التعليل في
+                // GalaxyGeometry ودالة gridCellOffsetFromCenterDp.
+                contentAlignment = Alignment.Center
+            ) {
+                val cellDp = with(density) { layout.cellPx.toDp() }
+                val gapDp = with(density) { layout.gapPx.toDp() }
+                val stepDp = cellDp + gapDp
+                clusters.forEachIndexed { index, cluster ->
+                    val col = index % layout.cols
+                    val row = index / layout.cols
+                    Box(
+                        modifier = Modifier
+                            .absoluteOffset(
+                                x = gridCellOffsetFromCenterDp(col, layout.cols, stepDp.value).dp,
+                                y = gridCellOffsetFromCenterDp(row, layout.rows, stepDp.value).dp
+                            )
+                            .size(cellDp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // كل عنقود يُرسم ببصمته الطبيعية ثم يُحجَّم بالمعامل
+                        // الموحّد حول مركزه — النسب بين الكواكب تبقى سليمة
+                        FolderClusterView(
+                            cluster = cluster,
+                            sizeDp = with(density) { layout.footprintsPx[index].toDp() },
+                            onOpenFolder = onOpenFolder,
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = layout.clusterScale
+                                scaleY = layout.clusterScale
+                                transformOrigin = TransformOrigin.Center
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// حساب البصمة [clusterFootprint] صار في [GalaxyLayoutEngine] — نفس الحزمة.
+
+/**
+ * عنقود واحد: كوكب الأم في مركز عنقوده، وحوله مجلداته الفرعية على مدار
+ * بزوايا متساوية (المسافة بين الأبناء مضمونة هندسياً)، خيوط تربطهم بالأم،
+ * ودائرة حاضنة بلون الأم تحصر العائلة كاملة — الكوكب وتسميته المتدلية معاً
+ * مهما كثر عدد الأبناء (الحدّ الرياضي في [GalaxyGeometry.confinementRadiusDp]).
+ * وإن لم يكن له أبناء فحلقة حارسة فقط.
+ *
+ * [sizeDp] هي بصمة العنقود الطبيعية — كل الحسابات الداخلية نسبة إليها،
+ * والتحجيم الفعلي على الشاشة يجري في طبقة التحويل الخارجية بمعامل موحّد.
+ */
+@Composable
+private fun FolderClusterView(
+    cluster: GalaxyCluster,
+    sizeDp: Dp,
+    onOpenFolder: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val parentColor = cluster.parent.color.toComposeColor(fallback = Color(0xFF4E7D6E))
+    val parentSize = GalaxyGeometry.parentPlanetSizeDp(cluster.parent.fileCount).dp
+
+    // عرض عمود الكوكب مشتق من ثابت الهندسة (مصدر حقيقة واحد للأم كما للابن)
+    val parentColumnWidth = (GalaxyGeometry.PARENT_COLUMN_HALF_WIDTH_DP * 2f).dp
+    // الإزاحة الرأسية الثابتة التي تجعل **قرص** الكوكب — لا عموده بتسميته —
+    // هو ما يتمركز على النقطة الهندسية المطلوبة.
+    val discY = GalaxyGeometry.columnOffsetYDp(0f).dp
+
+    // contentAlignment = Center: نقطة أصل انحيازها صفر فلا تنقلب في RTL،
+    // فتتطابق طبقة التخطيط مع إحداثيات Canvas المطلقة على أي جهاز — جوهر
+    // إصلاح «الكواكب ليست في منتصف دائرتها» (التفصيل في GalaxyGeometry).
+    Box(modifier = modifier.size(sizeDp), contentAlignment = Alignment.Center) {
+        if (cluster.children.isEmpty()) {
+            // مجلد بلا أبناء: كوكب تحرسه حلقة واقية — جوهر مقترح «زخات الشهب»
+            Canvas(Modifier.matchParentSize()) {
+                drawCircle(
+                    color = parentColor.copy(alpha = 0.32f),
+                    radius = GalaxyGeometry
+                        .guardianRingRadiusDp(cluster.parent.fileCount)
+                        .dp.toPx(),
+                    center = center,
+                    style = Stroke(width = 1.4.dp.toPx())
+                )
+            }
+            PlanetColumn(
+                folder = cluster.parent,
+                planetSize = parentSize,
+                color = parentColor,
+                onOpenFolder = onOpenFolder,
+                modifier = Modifier
+                    .absoluteOffset(x = 0.dp, y = discY)
+                    .width(parentColumnWidth)
+            )
+        } else {
+            val count = cluster.children.size
+            val maxChildFileCount = cluster.children.maxOf { it.fileCount }
+            // المدار: يتسع مع العدد وبحدّ يضمن تباعد الكواكب المتجاورة
+            // (انظر GalaxyGeometry.orbitRadiusDp)
+            val orbitRadius = GalaxyGeometry.orbitRadiusDp(count).dp
+            // الدائرة الحاضنة — جوهر إصلاح جلسة اليوم: كانت تحسب قرص الكوكب
+            // فقط فيتدلى نص الأبناء خارجها؛ الآن تحصر العمود كاملاً (كوكب +
+            // تسمية) لأي زاوية على المدار (انظر GalaxyGeometry)
+            val confinementRadius = GalaxyGeometry
+                .confinementRadiusDp(count, maxChildFileCount, cluster.parent.fileCount)
+                .dp
+
+            Canvas(Modifier.matchParentSize()) {
+                val c = center
+                // الدائرة الحاضنة تحصر كل كواكب العائلة
+                drawCircle(
+                    color = parentColor.copy(alpha = 0.30f),
+                    radius = confinementRadius.toPx(),
+                    center = c,
+                    style = Stroke(width = 1.3.dp.toPx())
+                )
+                // مدار الأبناء — دليل بصري خفيف
+                drawCircle(
+                    color = parentColor.copy(alpha = 0.12f),
+                    radius = orbitRadius.toPx(),
+                    center = c,
+                    style = Stroke(width = 1.dp.toPx())
+                )
+                // خيوط تربط كل كوكب ابن بكوكب أمه
+                for (i in cluster.children.indices) {
+                    // نفس دوال الهندسة التي يتموضع بها الكوكب نفسه أدناه —
+                    // مصدر حقيقة واحد للزاوية فلا ينفصل الخيط عن كوكبه.
+                    val pos = Offset(
+                        x = c.x + GalaxyGeometry.childCenterDxDp(i, count).dp.toPx(),
+                        y = c.y + GalaxyGeometry.childCenterDyDp(i, count).dp.toPx()
+                    )
+                    drawLine(
+                        color = parentColor.copy(alpha = 0.22f),
+                        start = c,
+                        end = pos,
+                        strokeWidth = 1.dp.toPx(),
+                        cap = StrokeCap.Round
+                    )
+                }
+            }
+
+            // كوكب الأم في مركز العنقود تماماً: إزاحة أفقية صفر عن نقطة أصل
+            // متمركزة ⇒ مركز القرص ينطبق على مركز الدائرة الحاضنة المرسومة
+            // على Canvas، في LTR وRTL على حد سواء.
+            PlanetColumn(
+                folder = cluster.parent,
+                planetSize = parentSize,
+                color = parentColor,
+                onOpenFolder = onOpenFolder,
+                modifier = Modifier
+                    .absoluteOffset(x = 0.dp, y = discY)
+                    .width(parentColumnWidth)
+            )
+
+            // كواكب الأبناء: زوايا متساوية تماماً على المدار، والمدار نفسه
+            // يضمن تباعد المتجاورين (GalaxyGeometry.orbitRadiusDp)
+            cluster.children.forEachIndexed { index, child ->
+                val childSize = GalaxyGeometry.childPlanetSizeDp(child.fileCount).dp
+                // الإحداثيات نسبةً لمركز العنقود — نفس الزوايا التي يرسم بها
+                // Canvas المدار والخيوط (GalaxyGeometry.childAngleRad)، فلا
+                // يمكن أن يفترق الكوكب عن خيطه مهما كان اتجاه الجهاز.
+                val dx = GalaxyGeometry.childCenterDxDp(index, count)
+                val dy = GalaxyGeometry.childCenterDyDp(index, count)
+                PlanetColumn(
+                    folder = child,
+                    planetSize = childSize,
+                    color = child.color.toComposeColor(fallback = Color(0xFF4E7D6E)),
+                    onOpenFolder = onOpenFolder,
+                    // عرض العمود مشتق من ثابت الهندسة نفسه (مصدر حقيقة واحد —
+                    // نصف العرض 39 والعرض 78) حتى لا يظهر انحراف صامت إن تغيّر
+                    // الثابت هناك يوماً
+                    modifier = Modifier
+                        .absoluteOffset(
+                            x = dx.dp,
+                            y = GalaxyGeometry.columnOffsetYDp(dy).dp
+                        )
+                        .width((GalaxyGeometry.CHILD_COLUMN_HALF_WIDTH_DP * 2f).dp)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * كوكب واحد (مجلد) مع اسمه وعدد ملفاته — العنصر قابل للنقر لفتح مجلده.
+ * التوهج والتدرج الشعاعي نفس روح النسخ السابقة، بحجمين: أم وابن.
+ */
+@Composable
+private fun PlanetColumn(
+    folder: FolderWithFileCount,
+    planetSize: Dp,
+    color: Color,
+    onOpenFolder: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.clickable { onOpenFolder(folder.folderId) },
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(planetSize)
+                .drawBehind {
+                    // توهج خفيف حول الكوكب
+                    drawCircle(
+                        color = color.copy(alpha = 0.25f),
+                        radius = size.minDimension / 2f + 6f
+                    )
+                }
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(color.copy(alpha = 0.95f), color.copy(alpha = 0.6f))
+                    )
+                )
+        )
+        Spacer(Modifier.height(GalaxyGeometry.LABEL_SPACER_DP.dp))
+        // كتلة التسمية المثبّتة — جوهر إصلاح «ملفات خارج الدائرة»: صندوق
+        // بارتفاع ثابت [GalaxyGeometry.LABELS_BOX_DP] مقصوص (clipToBounds)
+        // ومثبّت أعلاه، وبنصّين بارتفاع سطر مثبت (16) وبلا حشوة خط
+        // (includeFontPadding = false). بذلك لا يتجاوز ارتفاع الكتلة الفعلي
+        // قيمة الهندسة على أي جهاز أو خط أو حجم خط في النظام — فيبقى حدّ
+        // الحصر في GalaxyGeometry مضموناً واقعياً مهما كثر الأبناء.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(GalaxyGeometry.LABELS_BOX_DP.dp)
+                .clipToBounds(),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = folder.name,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                    ),
+                    lineHeight = 16.sp,
+                    color = Color(0xFFE0E5E1),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = "${folder.fileCount} ملف",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                    ),
+                    lineHeight = 16.sp,
+                    color = Color(0xFFA9B4AD),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
+
+/** مواصفات شهاب واحد: مسار مُعيَّن (إحداثيات نسبية) ودورة وزمن بدء. */
+private class MeteorSpec(
+    val startX: Float,
+    val startY: Float,
+    val endX: Float,
+    val endY: Float,
+    val period: Float,
+    val offset: Float
+)
+
+/**
+ * ثلاثة شهب فقط، متباعدة الدورات (11/13/17 ثانية) حتى يبقى المشهد هادئاً
+ * ولا يتحول إلى ازدحام ضوئي. المسارات مائلة وقصيرة نسبياً — تعبر وتختفي.
+ */
+private val METEORS = listOf(
+    MeteorSpec(0.08f, -0.04f, 0.52f, 0.50f, period = 13f, offset = 0f),
+    MeteorSpec(0.95f, -0.05f, 0.60f, 0.52f, period = 17f, offset = 5f),
+    MeteorSpec(0.38f, -0.06f, 0.06f, 0.44f, period = 11f, offset = 8f)
+)
+
+/**
+ * سماء الشهب: طبقة Canvas واحدة للنجوم الثابتة (بذرة ثابتة حتى لا تتغير
+ * مع كل إعادة تركيب) مع وميض بطيء، وللشهب الثلاثة بذيل ضوئي متدرج
+ * وغلاف ظهور/اختفاء ناعم. الحركة بطيئة ومريحة — لا ومضات أسرع من ثانيتين.
+ */
+@Composable
+private fun MeteorBackground(modifier: Modifier = Modifier) {
+    // نجوم ثابتة (بذرة عشوائية ثابتة حتى لا تتغير مع كل إعادة تركيب)
+    val stars = remember {
+        val random = Random(42)
+        List(70) {
+            Triple(random.nextFloat(), random.nextFloat(), random.nextFloat())
+        }
+    }
+
+    val transition = rememberInfiniteTransition(label = "galaxyMeteors")
+    // ساعة بطيئة جداً (دقيقة كاملة للدورة) تُشتق منها أطوار الشهب — قناة واحدة تكفي
+    val clock by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(60_000, easing = LinearEasing)),
+        label = "meteorClock"
+    )
+    val twinkle by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(4_000, easing = LinearEasing)),
+        label = "twinkle"
+    )
+
+    Canvas(modifier) {
+        // النجوم — نفس أسلوب النسخ السابقة
+        stars.forEach { star ->
+            val (fx, fy, phase) = star
+            val alpha = 0.25f + 0.55f * kotlin.math.abs(
+                sin((twinkle + phase) * 2f * PI.toFloat())
+            )
+            drawCircle(
+                color = Color.White.copy(alpha = alpha * 0.8f),
+                radius = 1.2f + phase * 1.6f,
+                center = Offset(fx * size.width, fy * size.height)
+            )
+        }
+
+        // الشهب — موضع كل شهاب دالة في الزمن، بلا حالة محفوظة
+        val seconds = clock * 60f
+        METEORS.forEach { meteor ->
+            val progress = ((seconds + meteor.offset) % meteor.period) / meteor.period
+            // غلاف ظهور/اختفاء ناعم: تلاشٍ تدريجي بلا قفزات
+            val fade = minOf(1f, progress / 0.12f, (1f - progress) / 0.22f).coerceAtLeast(0f)
+
+            val headX = (meteor.startX + (meteor.endX - meteor.startX) * progress) * size.width
+            val headY = (meteor.startY + (meteor.endY - meteor.startY) * progress) * size.height
+            val dirX = (meteor.endX - meteor.startX) * size.width
+            val dirY = (meteor.endY - meteor.startY) * size.height
+            val length = sqrt(dirX * dirX + dirY * dirY)
+            if (length <= 0f || fade <= 0f) return@forEach
+            val unitX = dirX / length
+            val unitY = dirY / length
+            val tailLength = 44.dp.toPx()
+            val head = Offset(headX, headY)
+            val tail = Offset(headX - unitX * tailLength, headY - unitY * tailLength)
+
+            // الذيل الضوئي المتدرج
+            drawLine(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFFE8D9A0).copy(alpha = 0f),
+                        Color(0xFFE8D9A0).copy(alpha = 0.55f * fade)
+                    )
+                ),
+                start = tail,
+                end = head,
+                strokeWidth = 2.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+            // توهج الرأس ثم الرأس نفسه
+            drawCircle(
+                color = Color(0xFFC79A4B).copy(alpha = 0.18f * fade),
+                radius = 8.dp.toPx(),
+                center = head
+            )
+            drawCircle(
+                color = Color(0xFFE8D9A0).copy(alpha = 0.85f * fade),
+                radius = 2.4.dp.toPx(),
+                center = head
+            )
+        }
+    }
+}
